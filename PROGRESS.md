@@ -1,6 +1,6 @@
-**Current:** Dependency scan 2026-11-11 — HIGH findings cleared by npm overrides (committed locally, not pushed); M4b not started
-**Next step:** Owner: decide on push — the gate is green except two pre-existing items (expo-doctor SDK patch drift/missing peers; Maestro text-entry hangs on the debug APK); then close Dependabot PR #1 and start M4b
-**Last session:** 2026-11-13 — node-forge 1.4.3 and @expo/cli zod 4.6.7 via overrides; osv-scanner 0 High (was 9); typecheck, lint, 360 tests, privacy, prebuild, gradle lint/debug/release, release Maestro 13/13 runnable, gitleaks green
+**Current:** Dependency scan 2026-11-11 — done and pushed (f0cbb95): HIGH findings cleared by npm overrides; Dependabot PR #1 closed; M4b not started
+**Next step:** M4b (prompts/M4.md): step 0 housekeeping first (repo move, expo-doctor via Expo 58 patch updates, debug-build Maestro typing cause), then dogfood review; Fiouri runs scriptsBuild-Release.ps1
+**Last session:** 2026-11-13 — node-forge 1.4.3 and @expo/cli zod 4.6.7 via overrides; osv-scanner 0 High (was 9); gate green except expo-doctor (2 checks) and debug-APK Maestro typing, both pre-existing and moved to M4b step 0
 
 ## Dependency scan 2026-11-11 (2026-11-13)
 
