@@ -2198,7 +2198,7 @@
     },
     {
       "name": "node-forge",
-      "version": "1.4.0",
+      "version": "1.4.3",
       "licence": "(BSD-3-Clause OR GPL-2.0)",
       "text": 130
     },
@@ -3017,12 +3017,6 @@
       "version": "21.1.1",
       "licence": "ISC",
       "text": 208
-    },
-    {
-      "name": "zod",
-      "version": "3.25.76",
-      "licence": "MIT",
-      "text": 209
     },
     {
       "name": "zod",

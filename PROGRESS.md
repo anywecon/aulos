@@ -1,6 +1,12 @@
-**Current:** M4a Release candidate 1.0.0-rc.1 — done; release signing now prompts for passwords at run time (no stored secrets); S23 dogfood running since 2026-10-29
-**Next step:** Owner: optionally ask GitHub Support to purge the old commit ids; keep dogfooding until 2026-11-05, then M4b (prompts/M4.md), where Fiouri runs scripts\Build-Release.ps1
-**Last session:** 2026-11-02 — Closed the local secret cleanup item (docs only); no secret files tracked; typecheck, lint, tests, privacy check green
+**Current:** Dependency scan 2026-11-11 — HIGH findings cleared by npm overrides (committed locally, not pushed); M4b not started
+**Next step:** Owner: decide on push — the gate is green except two pre-existing items (expo-doctor SDK patch drift/missing peers; Maestro text-entry hangs on the debug APK); then close Dependabot PR #1 and start M4b
+**Last session:** 2026-11-13 — node-forge 1.4.3 and @expo/cli zod 4.6.7 via overrides; osv-scanner 0 High (was 9); typecheck, lint, 360 tests, privacy, prebuild, gradle lint/debug/release, release Maestro 13/13 runnable, gitleaks green
+
+## Dependency scan 2026-11-11 (2026-11-13)
+
+- **Done:** npm `overrides`: `node-forge` ^1.4.3 (Expo CLI and code-signing-certificates) and `@expo/cli` → `zod` ^4.6.7; licences JSON regenerated. Neither node-forge nor zod 3 is in the Metro bundle (checked via the `expo export` source map).
+- **Verified:** osv-scanner 27 → 5 findings, High 9 → 0 (5 Medium remain, all below 7.0); typecheck, lint, 360 unit tests, privacy check, expo config, prebuild, export, `expo start --dev-client`, `gradlew lint assembleDebug assembleRelease` (lint 0 errors), gitleaks clean. Maestro on API 36 (4 GB, mock-jam): unsigned release x86_64 (debug-key copy) 13/13 runnable flows (m2 ×2 blocked by the TLS proxy); debug x86_64 8/15, text-entry flows hang on the dev build, same without the overrides.
+- **Open risks:** expo-doctor fails 2 checks at HEAD too (19 Expo SDK patch updates, missing peers expo-asset/expo-font); no HIGH advisory accepted (GHSA-86w9-cpqp-85rv, GHSA-mrhx-c7xc-m3w5 fixed by the overrides); re-check on every Expo patch release and drop an override once Expo ships the fix.
 
 ## Release signing secrets (2026-10-31)
 
