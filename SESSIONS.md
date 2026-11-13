@@ -544,3 +544,84 @@ Applies the global "Signing secrets" rule. No signing secret, keystore or `~/.gr
 | `gradlew --no-daemon :app:aulosCheckReleaseSigning` (no secrets in the environment)                                       | Fails as intended: "AULOS_STORE_PASSWORD, AULOS_KEY_PASSWORD not set" (path and alias resolved)                |
 | `gradlew --no-daemon --no-configuration-cache -Pkotlin…=out-of-process lint assembleRelease -Paulos.unsignedRelease=true` | Pass in 19 min; lint 0 errors, 22 warnings (as M4a); 4 unsigned APKs; no new Gradle/Kotlin daemon left running |
 | `Build-Release.ps1`                                                                                                       | Parses; PSScriptAnalyzer only `PSAvoidUsingWriteHost`. Not run (owner-only)                                    |
+
+## 2026-11-13 — M4b part 1: housekeeping, 1.0.0 version, pre-release checks
+
+Steps 0, 1 and 3 of prompts/M4.md (M4b). Steps 2 (owner checks), 4 (signed build), 5 (GitHub
+release) and 6 (installs) are open. No signed build was run and no signing secret was touched.
+
+### Step 0: housekeeping
+
+- **Repository move.** Every tracked `Fiouri/aulos` reference now points to `anywecon/aulos`
+  (`app.config.ts` User-Agent and About link, README, CHANGELOG links, SPEC, `m4-about`,
+  `record-fixtures.ps1`, prompts). History entries in this file are unchanged.
+- **Dependabot PR #1** (node-forge 1.4.2) was closed on 2026-11-13: node-forge ^1.4.3 is pinned
+  through npm overrides (`f0cbb95`).
+- **expo-doctor.** `npx expo install expo-asset expo-font` and `npx expo install --fix`: Expo
+  58.0.17 → 58.0.25, React Native 0.88.0 → 0.88.1, the Expo modules, react-native-screens and
+  react-native-safe-area-context to their SDK 58 versions, jest-expo 58.0.14; no SDK or major
+  change. expo-doctor 20/20 (was 18/20). New dependencies: expo-asset 58.0.21 (MIT) and
+  expo-font 58.0.12 (MIT), both GPL-3.0-compatible; no plugin entry needed. Licence list: 499
+  packages, all GPL-3.0-compatible (same licence set as M4a).
+- **Overrides re-checked.** Both kept. `@expo/cli` 58.1.20 no longer depends on zod, so that
+  override is now inert; node-forge resolves to 1.4.3. CLI checks from
+  `prompts/security-2026-11-11.md`: `expo config`, expo-doctor, prebuild, `expo export` (source
+  map: no node-forge, no zod 3) and `expo start --dev-client` (reached "Waiting on") all pass.
+  osv-scanner: 0 Critical, 0 High, 5 Medium (deepmerge, glob ×2, minimatch ×2).
+- **Dependabot glob/minimatch.** No PR exists: Dependabot's update runs for them failed, because
+  the fixes need glob 14 and minimatch 11, majors that the dependents' ranges do not allow. Both
+  findings remain Medium (6.3 and 6.9) and are build tooling.
+- **Debug-build Maestro failures.** Cause found, not in the app. Before every key press and tap,
+  Maestro's driver calls UiAutomator's `waitForIdle` (10 s). On the API 36 emulator's debug build
+  the React Native debug runtime never reports idle ("Could not detect idle state"), so each key
+  takes 10 s (measured: 10.1 s per key on debug, 0.11 s on release). A 13-character address
+  then exceeds Maestro's 120 s gRPC deadline (`DEADLINE_EXCEEDED` during `inputText`) and loses
+  its last character. Some taps arrive late as long presses (DocumentsUI multi-select) or miss a
+  screen change. The app code is not involved: an uncontrolled input typed just as slowly, the app
+  has no `__DEV__` code, and the same flows pass on the release APK. README → Build from source
+  now says to run the suite on a release APK (signed with the debug key on emulators) and
+  explains why; the emulator runs below use that APK. A full debug run: 8/15 fail
+  (6 typing flows, `m1-light-theme`, `m3-import-nuclear`).
+
+### Step 1: dogfood
+
+Light use only, not daily; the DOGFOOD.md checklist was not filled in. Fiouri saw no crash or
+bug; the S23 crash buffer and DropBox (recent days only) held no Aulos crash, native crash or
+ANR. Fiouri accepted releasing 1.0.0 on this basis (SPEC Decisions, DOGFOOD.md "Outcome"), on
+condition that the full Maestro suite passes on the S23 with the signed 1.0.0 installed over
+rc.1 before the GitHub release.
+
+### Step 3: version 1.0.0
+
+`VERSION` 1.0.0 and `VERSION_CODE_BASE` 10010 (RELEASING.md): APK versionCodes 10010 universal,
+10011 armeabi-v7a, 10012 arm64-v8a, 10013 x86_64 (x86_64 checked with aapt2). package.json 1.0.0,
+CHANGELOG 1.0.0, fastlane changelogs 10010–10013, README verify examples, `m4-about` expects
+1.0.0.
+
+### Verification
+
+| Check                                                                             | Result                                                                                                                                       |
+| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`                                                               | Pass                                                                                                                                         |
+| `npm run lint` (`--max-warnings 0`)                                               | Pass                                                                                                                                         |
+| `npm test -- --ci`                                                                | Pass, 43 suites / 360 tests                                                                                                                  |
+| `.\scripts\check-privacy.ps1`                                                     | Pass                                                                                                                                         |
+| `npx expo-doctor`                                                                 | 20/20                                                                                                                                        |
+| `npm run android:prebuild`                                                        | Pass                                                                                                                                         |
+| `gradlew --no-daemon lint assembleRelease -Paulos.unsignedRelease=true`           | Pass (1.0.0); lint 0 errors, 22 warnings (as M4a)                                                                                            |
+| `gradlew lint assembleDebug assembleRelease` after the Expo update                | Pass; lint 0 errors, 22 warnings                                                                                                             |
+| osv-scanner                                                                       | 0 High / 0 Critical; 5 Medium                                                                                                                |
+| gitleaks                                                                          | No leaks                                                                                                                                     |
+| Maestro API 36 (`aulos-api36`, 4 GB), 1.0.0 x86_64 release APK, fresh, mock-jam   | 13/15; `m2-archive-stream` and `m2-download-offline` blocked by the TLS proxy ("Could not reach the service"), as in M4a. **13/13 runnable** |
+| Maestro API 31 (`aulos-api31`, 4 GB), same APK, rc.1 uninstalled, fresh, mock-jam | 13/15, same two m2 flows. **13/13 runnable**                                                                                                 |
+| Maestro on the S23                                                                | Not run: needs the signed 1.0.0 over rc.1 (step 4/6), per Fiouri                                                                             |
+| `apksigner verify` of signed APKs                                                 | Not run: no signed APKs yet (step 4)                                                                                                         |
+| Code review (subagent)                                                            | No MUST-FIX; wording and range fixes applied                                                                                                 |
+
+### Device state
+
+API 36 and API 31 emulators: test media pushed and removed (`-Mode clean`), Aulos uninstalled
+(API 31 held rc.1 from M4a), emulators shut down, locks released. Both boot with `-memory 4096
+-no-window`: the AVDs start with 2 GB otherwise, and a leftover crash-report dialog blocks a
+windowed start. The S23 was only read (crash buffer, DropBox, installed version) under a lock;
+rc.1 and its data are untouched.
