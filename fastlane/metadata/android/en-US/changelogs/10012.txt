@@ -1,0 +1,1 @@
+First stable release: the features of 1.0.0-rc.1 on the latest Expo SDK 58 patch releases (React Native 0.88.1); source code now at github.com/anywecon/aulos.

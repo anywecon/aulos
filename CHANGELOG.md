@@ -7,6 +7,23 @@ All notable changes to Aulos are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-13
+
+First stable release, with the same features as 1.0.0-rc.1, which showed no crash or bug during
+its test period.
+
+### Changed
+
+- Updated to the latest Expo SDK 58 patch releases (React Native 0.88.1, expo-router,
+  expo-audio, expo-sqlite and the other Expo modules).
+- The source code moved to [github.com/anywecon/aulos](https://github.com/anywecon/aulos);
+  Settings → About and the app's User-Agent now point there.
+
+### Security
+
+- Build tooling only, not part of the app: vulnerable `node-forge` and `zod` versions used by
+  the Expo command-line tools are replaced with fixed versions.
+
 ## [1.0.0-rc.1] - 2026-10-29
 
 First release candidate, for seven days of daily use before 1.0.0.
@@ -38,5 +55,6 @@ First release candidate, for seven days of daily use before 1.0.0.
   connection must use HTTPS. Nuclear Jam itself has no password: see the pairing guide in the
   README.
 
-[Unreleased]: https://github.com/anywecon/aulos/compare/v1.0.0-rc.1...HEAD
+[Unreleased]: https://github.com/anywecon/aulos/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/anywecon/aulos/releases/tag/v1.0.0
 [1.0.0-rc.1]: https://github.com/anywecon/aulos/releases/tag/v1.0.0-rc.1

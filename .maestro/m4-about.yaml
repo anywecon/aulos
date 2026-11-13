@@ -9,7 +9,7 @@ appId: com.anywecon.aulos
       id: 'settings-privacy'
 - assertVisible:
     id: 'app-version'
-    text: '1.0.0-rc.1'
+    text: '1.0.0'
 - assertVisible: 'GPL-3.0-or-later'
 - assertVisible: 'https://github.com/anywecon/aulos'
 - assertVisible:

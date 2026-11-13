@@ -15,13 +15,13 @@ import {
 } from 'expo/config-plugins';
 
 /** Version name of this release; see RELEASING.md for the version scheme. */
-const VERSION = '1.0.0-rc.1';
+const VERSION = '1.0.0';
 
 /**
  * Base versionCode of this release (RELEASING.md): it grows by 10 with every published build and
  * each ABI APK adds its digit below; the universal APK keeps the base.
  */
-const VERSION_CODE_BASE = 10000;
+const VERSION_CODE_BASE = 10010;
 
 /** ABIs that get their own APK, with the digit added to the base versionCode. */
 const ABI_DIGITS = { 'armeabi-v7a': 1, 'arm64-v8a': 2, x86_64: 3 } as const;
