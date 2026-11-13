@@ -167,10 +167,11 @@ emulator the React Native debug runtime does not reach that state. Typing then t
 character instead of about 0.1 s on a release build. Inputs longer than about 12 characters hit
 Maestro's 120 s command timeout and lose their last characters. Late taps also arrive as long
 presses or miss a screen change. On the API 36 emulator's debug build, 8 of the 15 flows fail
-for this reason: `m1-playlists`, `m2-archive-stream`, `m2-download-offline`, `m3-pair-manual`, `m3-pc-queue` and
-`m3-remote-controls` (typing), and `m1-light-theme` and `m3-import-nuclear` (taps). The evidence
-points away from the app code: changing the input field's text handling did not make typing any
-faster, the app has no debug-only code, and all of these flows pass on the release APK.
+for this reason: `m1-playlists`, `m2-archive-stream`, `m2-download-offline`, `m3-pair-manual`,
+`m3-pc-queue` and `m3-remote-controls` (typing), and `m1-light-theme` and `m3-import-nuclear` (taps).
+The evidence points away from the app code: changing the input field's text handling did not
+make typing any faster, the app has no debug-only code, and all of these flows pass on the
+release APK.
 
 See [SPEC.md](SPEC.md) for the design and
 [CHANGELOG.md](CHANGELOG.md) for releases. Security reports: [SECURITY.md](SECURITY.md).
