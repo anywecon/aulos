@@ -151,7 +151,8 @@ maestro test -e EXPECTED_TRACKS=<music count> .maestro/
 `test-media.ps1` needs ffmpeg and adb on PATH.
 
 Run the Maestro suite against a release build. On an emulator, sign the unsigned x86_64 APK with
-the SDK's debug key (Android Studio's `~/.android/debug.keystore`) and install that:
+the SDK's debug key (`~/.android/debug.keystore`, created by the first `npx expo run:android` or
+Android Studio build) and install that:
 
 ```powershell
 apksigner sign --ks $env:USERPROFILE\.android\debug.keystore --ks-pass pass:android `
@@ -165,11 +166,11 @@ Maestro's Android driver waits up to 10 s for the UI to go idle (UiAutomator), a
 emulator the React Native debug runtime does not reach that state. Typing then takes about 10 s per
 character instead of about 0.1 s on a release build. Inputs longer than about 12 characters hit
 Maestro's 120 s command timeout and lose their last characters. Late taps also arrive as long
-presses or miss a screen change. On a debug build, 8 of the 15 flows fail for this reason:
-`m1-playlists`, `m2-archive-stream`, `m2-download-offline`, `m3-pair-manual`, `m3-pc-queue` and
-`m3-remote-controls` (typing), and `m1-light-theme` and `m3-import-nuclear` (taps). The app code
-plays no part: the same input field typed just as slowly with its text handling changed, the app
-has no debug-only code, and all of these flows pass on the release APK.
+presses or miss a screen change. On the API 36 emulator's debug build, 8 of the 15 flows fail
+for this reason: `m1-playlists`, `m2-archive-stream`, `m2-download-offline`, `m3-pair-manual`, `m3-pc-queue` and
+`m3-remote-controls` (typing), and `m1-light-theme` and `m3-import-nuclear` (taps). The evidence
+points away from the app code: changing the input field's text handling did not make typing any
+faster, the app has no debug-only code, and all of these flows pass on the release APK.
 
 See [SPEC.md](SPEC.md) for the design and
 [CHANGELOG.md](CHANGELOG.md) for releases. Security reports: [SECURITY.md](SECURITY.md).

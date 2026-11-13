@@ -9,8 +9,8 @@ All notable changes to Aulos are documented here. The format follows
 
 ## [1.0.0] - 2026-11-13
 
-First stable release, with the same features as 1.0.0-rc.1, which showed no crash or bug during
-its test period.
+First stable release, with the same features as 1.0.0-rc.1, which showed no crash or bug in light
+use during its test period (not the planned seven days of daily use).
 
 ### Changed
 

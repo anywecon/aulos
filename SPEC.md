@@ -18,7 +18,7 @@ Binding copy for implementation. Discussion copy: Claude Doc "Android Music App 
 | Languages | English only in v1; all UI strings go through i18n so a translation can be added later without code changes |
 | Jamendo | Deferred (2026-10-24): not in v1; may be added later as another provider |
 | Build-tool dependency overrides | 2026-11-13: npm `overrides` pin `node-forge` ^1.4.3 (GHSA-86w9-cpqp-85rv and the other 1.4.0 advisories) and `@expo/cli` → `zod` ^4.6.7 (GHSA-mrhx-c7xc-m3w5); both are Expo CLI build-time tooling, not in the APK; no HIGH finding is accepted. Re-check on every Expo patch release (incl. `npx expo start --dev-client`) and drop an override once Expo ships the fixed version |
-| 1.0.0 release gate | 2026-11-13: the rc.1 dogfood was light use, not 7 days of daily use; no crash or bug seen and the S23 crash logs are clean. Fiouri accepted releasing 1.0.0 on that basis; the GitHub release is created only after the full Maestro suite passes on the S23 with the signed 1.0.0 installed over rc.1 |
+| 1.0.0 release gate | 2026-11-13: the rc.1 dogfood was light use, not 7 days of daily use; no crash or bug seen, and the S23 crash logs held on 2026-11-13 (recent days only) are clean. Fiouri accepted releasing 1.0.0 on that basis; the GitHub release is created only after the full Maestro suite passes on the S23 with the signed 1.0.0 installed over rc.1 |
 
 ## 1. Summary and goals
 
