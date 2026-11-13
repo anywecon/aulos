@@ -53,7 +53,7 @@ const withLegacyStoragePermission: ConfigPlugin = (config) =>
   });
 
 /** Repository named in the User-Agent of every request (src/net/client.ts). */
-const REPOSITORY_URL = 'https://github.com/Fiouri/aulos';
+const REPOSITORY_URL = 'https://github.com/anywecon/aulos';
 
 const NETWORK_SECURITY_CONFIG = 'network_security_config';
 

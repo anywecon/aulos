@@ -38,5 +38,5 @@ First release candidate, for seven days of daily use before 1.0.0.
   connection must use HTTPS. Nuclear Jam itself has no password: see the pairing guide in the
   README.
 
-[Unreleased]: https://github.com/Fiouri/aulos/compare/v1.0.0-rc.1...HEAD
-[1.0.0-rc.1]: https://github.com/Fiouri/aulos/releases/tag/v1.0.0-rc.1
+[Unreleased]: https://github.com/anywecon/aulos/compare/v1.0.0-rc.1...HEAD
+[1.0.0-rc.1]: https://github.com/anywecon/aulos/releases/tag/v1.0.0-rc.1

@@ -11,7 +11,7 @@ appId: com.anywecon.aulos
     id: 'app-version'
     text: '1.0.0-rc.1'
 - assertVisible: 'GPL-3.0-or-later'
-- assertVisible: 'https://github.com/Fiouri/aulos'
+- assertVisible: 'https://github.com/anywecon/aulos'
 - assertVisible:
     text: 'No accounts, no tracking, no analytics.*'
 - tapOn:

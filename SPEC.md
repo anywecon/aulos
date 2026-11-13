@@ -7,7 +7,7 @@ Binding copy for implementation. Discussion copy: Claude Doc "Android Music App 
 
 | Decision | Default |
 | --- | --- |
-| App name / package | `Aulos`, `com.anywecon.aulos` (full flavour: `com.anywecon.aulos.full`); repo `Fiouri/aulos` |
+| App name / package | `Aulos`, `com.anywecon.aulos` (full flavour: `com.anywecon.aulos.full`); repo `anywecon/aulos` |
 | Aulos Link plugin | No-go for v1 (2026-10-26); playlist transfer stays JSON export/import. Revisit after v1 |
 | Background downloads | v1 limitation: downloads pause when the app is backgrounded without playback and resume in the foreground; a download foreground service is v1.1 |
 | Licence | GPL-3.0-or-later |
@@ -185,7 +185,7 @@ None starts until the previous gate passes on a real phone.
 | M1 Offline player | Library browse, queue, gapless, background; lock screen, Bluetooth, sleep timer; playlists, favorites, history; FTS search that ignores accents (Greek tonos included); R8 minify and resource shrinking on release | 2,000-track scan under 30 s; 1 h screen-off playback with no stop; cold start under 2 s; all Maestro flows pass on the S23 and on an API 31 emulator |
 | M2 Sources and downloads | SourceProvider interface; Internet Archive; downloads with resume and storage limit | Search, stream and download a track, then play it in airplane mode; provider tests use recorded HTTP fixtures |
 | M3 Nuclear pairing | LAN discovery and manual pairing, live remote over SSE; PC search and send to the PC queue; import Nuclear JSON playlists; Aulos Link plugin spike | Control the PC over LAN and Tailscale; an imported Nuclear playlist plays on the phone; spike report with go/no-go |
-| M4 Release | English UI; app icon; ABI splits; release signing; `clean` flavour; public repo `Fiouri/aulos`; signed APKs and SHA-256 on GitHub Releases | RC: full suite on the S23, fresh install on API 31 and API 36 emulators, F-Droid metadata ready; final: 7 days of daily use on the S23 with zero crashes |
+| M4 Release | English UI; app icon; ABI splits; release signing; `clean` flavour; public repo `anywecon/aulos`; signed APKs and SHA-256 on GitHub Releases | RC: full suite on the S23, fresh install on API 31 and API 36 emulators, F-Droid metadata ready; final: 7 days of daily use on the S23 with zero crashes |
 
 Verification gate (every milestone and in CI):
 

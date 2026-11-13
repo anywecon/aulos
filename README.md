@@ -34,7 +34,7 @@ More screenshots: [albums](docs/screenshots/2-albums.png), [search](docs/screens
 
 ## Install
 
-Download the APK from [GitHub Releases](https://github.com/Fiouri/aulos/releases). Android 7.0
+Download the APK from [GitHub Releases](https://github.com/anywecon/aulos/releases). Android 7.0
 (API 24) or newer.
 
 | APK                               | For                                                                    |
