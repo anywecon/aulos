@@ -60,3 +60,14 @@ What each column means:
 ## Log
 
 Day 1 (2026-10-29): rc.1 installed; see SESSIONS.md for how the data was carried over.
+
+## Outcome (recorded 2026-11-13)
+
+- **Use:** light use only, not daily; the daily checklist above was not filled in. The period ran
+  from 2026-10-29 to 2026-11-13 on rc.1 (versionCode 10002).
+- **Crashes and bugs:** none seen by Fiouri. On the S23, `adb logcat -b crash` and
+  `dumpsys dropbox` (34 entries) held no Aulos crash, native crash or ANR on 2026-11-13.
+- **Gate:** SPEC §8 asks for 7 days of daily use with zero crashes. That was not met in full;
+  Fiouri accepted releasing 1.0.0 on this basis (2026-11-13). The full Maestro suite must pass on
+  the S23 with the signed 1.0.0 installed over rc.1 before the GitHub release is created.
+- **Also try once:** not reported; these items remain untested owner checks for 1.0.0.
