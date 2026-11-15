@@ -1,5 +1,5 @@
 import { queryAudio, type MediaStoreAudio } from '../../modules/media-store';
-import { moveAlbumFavorites } from '@/collections/favorites';
+import { moveAlbumFavorites, trackFavoriteKey } from '@/collections/favorites';
 import type { Db } from '@/db/types';
 import { normalizeNullable, normalizeText } from '@/search/normalize';
 import {
@@ -121,6 +121,11 @@ export async function scanLibrary(db: Db, options: ScanOptions = {}): Promise<Sc
     }
     for (const id of result.toDelete) {
       await tx.run('DELETE FROM tracks WHERE id = ?', [id]);
+      // Track favourites are keyed by id as text (no foreign key), and SQLite reuses the highest
+      // freed id: drop the favourite with its track so it never lands on a new one.
+      await tx.run("DELETE FROM favorites WHERE kind = 'track' AND key = ?", [
+        trackFavoriteKey(id),
+      ]);
     }
     const oldKeys = new Map(stored.map((t) => [t.id, t.albumKey]));
     await moveAlbumFavorites(

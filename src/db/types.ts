@@ -18,6 +18,9 @@ export interface Db {
   /**
    * Runs `fn` inside one transaction: commits when it resolves, rolls back when it rejects.
    * All queries inside must go through `tx`. Nested calls on `tx` join the outer transaction.
+   * On the device, transactions run one at a time on their own connection: calling
+   * `transaction` on the root db inside `fn` waits for itself forever, and a root-db write inside
+   * `fn` waits for the busy timeout and then fails.
    */
   transaction<T>(fn: (tx: Db) => Promise<T>): Promise<T>;
 }

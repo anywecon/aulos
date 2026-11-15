@@ -66,6 +66,24 @@ describe('scanLibrary', () => {
     expect(await db.getFirst("SELECT id FROM tracks WHERE provider_ref = '2'")).toBeNull();
   });
 
+  it("drops a removed track's favourite so a reused id does not inherit it", async () => {
+    await scanLibrary(db, { query: async () => [audio('1'), audio('2')] });
+    const ids = await db.getAll<{ id: number }>('SELECT id FROM tracks ORDER BY id');
+    for (const { id } of ids) {
+      await db.run("INSERT INTO favorites (kind, key, added_at) VALUES ('track', ?, 0)", [
+        String(id),
+      ]);
+    }
+    await db.run("INSERT INTO favorites (kind, key, added_at) VALUES ('album', 'some-album', 0)");
+
+    await scanLibrary(db, { query: async () => [audio('1')] });
+
+    expect(await db.getAll('SELECT kind, key FROM favorites ORDER BY kind, key')).toEqual([
+      { kind: 'album', key: 'some-album' },
+      { kind: 'track', key: String(ids[0]?.id) },
+    ]);
+  });
+
   it('never touches tracks from other providers', async () => {
     await db.run(
       "INSERT INTO tracks (provider, provider_ref, title) VALUES ('archive', 'x', 'Remote')",
