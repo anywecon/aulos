@@ -31,6 +31,10 @@ use during its test period (not the planned seven days of daily use).
   them, the playlist showed nothing), in the listening history and in track favourites. They are
   now removed with the track, and the update cleans up what earlier versions left. A favourite
   that an earlier version already moved onto a newer track cannot be told apart and stays.
+- When the phone suddenly reports no music, or less than half of a library of 20 or more tracks
+  (music permission revoked, SD card removed, media index being rebuilt), a scan no longer
+  removes anything: the Library explains why, and "Remove missing tracks" removes them after a
+  confirmation when the music is really gone.
 
 ### Security
 
