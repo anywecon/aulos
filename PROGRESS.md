@@ -1,6 +1,6 @@
-**Current:** M4b 1.0.0 — steps 0, 1, 3 done (housekeeping, dogfood recorded, version 1.0.0); waiting for owner steps 2 and 4
-**Next step:** Fiouri: manual checks (Tailscale pairing, real Nuclear export, Wi-Fi only on mobile data or documented untested), then `scripts\Build-Release.ps1`; then Claude checks dist/1.0.0, runs the full S23 suite on the signed 1.0.0 over rc.1, and creates the release only with Fiouri's yes
-**Last session:** 2026-11-15 — better-sqlite3 pinned to ^12 (prebuilt Windows binary; Build-Release.ps1 `npm ci` failed on 13.x), test adapter fix for its cross-realm errors; clean `npm ci`, typecheck, lint, 360 tests, privacy, expo-doctor 20/20, osv 0 High; 2026-11-14: inert `@expo/cli` zod override removed; 2026-11-13: Expo SDK 58 patch update (expo-doctor 20/20), repo refs to anywecon/aulos, debug-build Maestro cause documented, 1.0.0 bump; typecheck, lint, 360 tests, privacy, prebuild, gradle lint/release, osv 0 High, gitleaks, Maestro API 36 and API 31 13/13 runnable green
+**Current:** M4b 1.0.0 — first signed build verified (S23 14/14, emulators 13/13 runnable) but not released: Nuclear 1.55 refuses Tailscale and host names, so pairing is now same-Wi-Fi, IP only; waiting for a new signed build
+**Next step:** Fiouri re-runs `scripts\Build-Release.ps1` (versionCode base stays 10010: nothing was published); then Claude verifies dist/1.0.0, installs it over the current 1.0.0 on the S23, runs the full S23 suite and the emulator fresh installs, and creates the release only with Fiouri's yes
+**Last session:** 2026-11-15 — signed 1.0.0 verified (apksigner, S23 upgrade from rc.1 keeps data, S23 14/14 incl. real Nuclear 1.55 on LAN, API 36/31 13/13 runnable); Nuclear 1.55 access rule → IP-only pairing + 403 message, docs updated; step 2 recorded; typecheck, lint, 364 tests, privacy, prebuild, Gradle lint/release; earlier the same day better-sqlite3 pinned to ^12
 
 ## M4b 1.0.0 (in progress, 2026-11-13)
 
@@ -8,7 +8,9 @@
 - **Verified:** typecheck, lint, 360 tests, privacy check, expo-doctor 20/20, prebuild, Gradle lint 0 errors, osv-scanner 0 High, gitleaks clean; Maestro on API 36 and API 31 with the 1.0.0 x86_64 release APK (debug key): 13/13 runnable each (the two Internet Archive flows are blocked by the PC's TLS proxy on emulators).
 - **Open:** step 2 owner checks; step 4 signed build (owner); S23 full suite on the signed 1.0.0 over rc.1 before step 5; steps 5–6. Dependabot glob/minimatch: no PR (update runs fail, majors needed), Medium only. Pushed to main on 2026-11-14 with Fiouri's yes.
 - **2026-11-15:** step 4 first attempt stopped at `npm ci` (better-sqlite3 13.x needs a compiler); fixed by pinning ^12.11.1. Re-run `scripts\Build-Release.ps1`.
-- **Device testing (owner):** Tailscale pairing by 100.x; a real Nuclear export via the share sheet; Wi-Fi only on mobile data; DOGFOOD "also try once" items untested.
+- **2026-11-15 (part 2):** the signed build checked out (apksigner v2+v3, cert as published, checksums), S23 rc.1 → 1.0.0 kept its data, S23 suite 14/14, emulator fresh installs 13/13 runnable. Not released: Nuclear 1.55 (`http_api/access.rs`) answers 403 to Tailscale and to host names, so 1.0.0 now pairs by IP address on the same Wi-Fi only and explains a 403; README, CHANGELOG, SPEC, fastlane and DOGFOOD updated. Step 2: Tailscale not possible by design upstream; real Nuclear export imported (0 of 11 matched, correct: none of its tracks is on the phone); Wi-Fi only on mobile data untested (no SIM with data).
+- **Open risks:** Nuclear may change Jam again (re-check `http_api/` on Nuclear updates); a pairing saved by host name or Tailscale address before 1.0.0 only shows "Reconnecting" (none published).
+- **Device testing (owner):** DOGFOOD "also try once" items untested.
 
 ## Dependency scan 2026-11-11 (2026-11-13)
 

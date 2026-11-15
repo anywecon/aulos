@@ -24,7 +24,7 @@ on your PC. No accounts, no tracking, no analytics.
 - **Internet Archive.** Search, stream and download public-domain and Creative Commons audio
   (MP3, FLAC or Ogg). Downloads resume after a restart, can be limited to Wi-Fi and to a storage
   budget, and play in airplane mode.
-- **Nuclear on your PC.** Find Nuclear on your Wi-Fi or type its address (Tailscale works too); a
+- **Nuclear on your PC.** Find Nuclear on your Wi-Fi or type its IP address on the same Wi-Fi; a
   live remote with play/pause, skip, seek, volume, shuffle, repeat and favourite; the PC's queue,
   search on the PC, "Send to PC" for a phone track, and import of playlists exported from Nuclear.
 - **Private.** The only network traffic is to the Internet Archive (HTTPS) and to your own PC.
@@ -76,9 +76,9 @@ Aulos talks to Nuclear through **Nuclear Jam**, the HTTP API that Nuclear's own 
 
 1. In Nuclear on the PC, turn on **Nuclear Jam** in Settings. Settings → Integrations then shows the
    API address, for example `http://192.168.1.42:4120/api`.
-2. On the phone, open the **PC** tab. On the same Wi-Fi, tap **Find PCs on Wi-Fi**; or type the PC's address
-   (`192.168.1.42`, or `192.168.1.42:4121` if Jam uses another port in 4120–4129) and connect.
-   The PC is saved, and the PC tab reconnects to it next time.
+2. On the phone, open the **PC** tab. On the same Wi-Fi, tap **Find PCs on Wi-Fi**; or type the PC's IP
+   address (`192.168.1.42`, or `192.168.1.42:4121` if Jam uses another port in 4120–4129) and
+   connect. The PC is saved, and the PC tab reconnects to it next time.
 3. **Security notice.** Nuclear Jam has no password: anyone on the same network can control the PC
    player. Aulos shows this once when you first pair. Keep Jam reachable on trusted networks only:
    - In Windows Defender Firewall, allow Nuclear on **Private** networks only (untick _Public_ in
@@ -91,18 +91,11 @@ Aulos talks to Nuclear through **Nuclear Jam**, the HTTP API that Nuclear's own 
      ```
 
    - Make sure your home Wi-Fi is set to _Private_ in Windows, and turn Jam off on public Wi-Fi.
-4. **Away from home: Tailscale.** Install [Tailscale](https://tailscale.com) on the PC and the
-   phone, then enter the PC's Tailscale address (`100.x.y.z`) or its MagicDNS name
-   (`my-pc.tail1234.ts.net`) in the PC tab. Tailscale encrypts the traffic, which Jam itself does
-   not. Windows usually puts the Tailscale adapter in the _Public_ profile, so the Private-only rule
-   above does not cover it; allow Jam for Tailscale addresses only:
-
-   ```powershell
-   New-NetFirewallRule -DisplayName "Nuclear Jam (Tailscale)" -Direction Inbound `
-     -Protocol TCP -LocalPort 4120-4129 -RemoteAddress 100.64.0.0/10 -Action Allow
-   ```
-
-   Wi-Fi discovery does not work while a VPN is on in the phone; type the address instead.
+4. **Same Wi-Fi only.** Since Nuclear 1.55, Jam answers only devices on the PC's own local
+   network that use its IP address: it refuses VPN addresses such as Tailscale (`100.64.0.0/10`)
+   and host names such as MagicDNS names. Aulos then shows "Nuclear refused the connection". The
+   remote does not work away from home. Wi-Fi discovery does not work while a VPN is on in the
+   phone; type the PC's address instead.
 
 Aulos only sends plain HTTP to private addresses (LAN, Tailscale `100.64.0.0/10`, `*.ts.net`,
 link-local); everything else must be HTTPS.
@@ -118,8 +111,10 @@ is new and never removes anything.
   music, and resume when you return to it. A download service is planned for v1.1.
 - **Android only.** There is no iOS version.
 - **English only.** Every string goes through i18n, so translations can be added later.
-- Nuclear Jam has no authentication (see above), and cannot send the PC's playlists to the phone
-  on its own: use Nuclear's playlist export.
+- The PC remote works on the same Wi-Fi only: Nuclear 1.55 and later refuse connections from
+  other networks, Tailscale included.
+- Nuclear Jam has no authentication (see above). Aulos 1.0 imports the PC's playlists from
+  Nuclear's playlist export files.
 
 ## Build from source
 

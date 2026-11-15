@@ -17,7 +17,7 @@ Aulos is an open-source music player that puts the music already on your phone f
 
 <b>Nuclear on your PC</b>
 <ul>
-<li>Find Nuclear on your Wi-Fi or enter its address (Tailscale works too).</li>
+<li>Find Nuclear on your Wi-Fi or enter its IP address (the PC and the phone must be on the same Wi-Fi).</li>
 <li>Live remote: play, pause, skip, seek, volume, shuffle, repeat and favourite.</li>
 <li>See and edit the PC's queue, search on the PC, and send a phone track to the PC.</li>
 <li>Import playlists exported from Nuclear.</li>

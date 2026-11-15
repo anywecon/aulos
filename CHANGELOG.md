@@ -14,6 +14,10 @@ use during its test period (not the planned seven days of daily use).
 
 ### Changed
 
+- Nuclear pairing accepts IP addresses only, and the remote works on the same Wi-Fi only: since
+  Nuclear 1.55, Jam refuses connections from other networks (Tailscale included) and requests
+  that use a host name. When Nuclear refuses, Aulos now says so and asks for the PC's Wi-Fi
+  address instead of reporting that Nuclear did not answer.
 - Updated to the latest Expo SDK 58 patch releases (React Native 0.88.1, expo-router,
   expo-audio, expo-sqlite and the other Expo modules).
 - The source code moved to [github.com/anywecon/aulos](https://github.com/anywecon/aulos);

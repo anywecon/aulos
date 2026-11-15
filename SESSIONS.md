@@ -658,3 +658,44 @@ EPERM on `@testing-library/react-native` had no process behind it by the time of
 | `.\scripts\check-privacy.ps1` | Pass                                                |
 | `npx expo-doctor`             | 20/20                                               |
 | osv-scanner                   | 0 High; the same 5 Medium                           |
+
+## 2026-11-15 — M4b part 2: signed 1.0.0 checks, Nuclear 1.55 access rule
+
+### Signed 1.0.0 (first build, Fiouri's `scripts\Build-Release.ps1`)
+
+- `scripts\release-apks.ps1` re-run on the output and `apksigner verify --verbose --print-certs` (build-tools 37.0.0) on each APK in `dist/1.0.0/`: v2 and v3 verified, one signer, `CN=Any WeCon, O=Any WeCon, C=GR`, certificate SHA-256 as in RELEASING.md; versionCode 10010 (universal), 10011, 10012, 10013; `sha256sum -c SHA256SUMS.txt` OK. Merged permissions unchanged from rc.1. The universal APK holds `x86` as well as the three split ABIs, as rc.1 did.
+- S23 upgrade: rc.1 (10002) → 1.0.0 arm64-v8a (10012) with `adb install -r`. A read-only Maestro snapshot (no `clearState`) before and after: 14 tracks, the saved PC and the last played track kept (no playlists, favourites or downloads existed).
+- S23 suite with the signed 1.0.0 (USB, `-e EXPECTED_TRACKS=36`, `m3-pc-queue` excluded as mock-jam only): 12/12 non-Nuclear flows, including both Internet Archive flows over real HTTPS; then `m3-pair-manual` and `m3-remote-controls` against the real Nuclear **1.55.0** on the LAN: 2/2. **14/14.** No Aulos entry in the crash buffer.
+- Fresh installs, signed x86_64 APK, mock-jam: API 36 13/15, API 31 10/15 then the 3 flows cut off by an "emulator-5556 offline" adb drop re-run 3/3; on both, `m2-archive-stream` and `m2-download-offline` are blocked by the PC's TLS proxy (M4a). **13/13 runnable on each.** No Aulos crash. Test media removed, app uninstalled, emulators shut down, locks released.
+
+### Blocker: Nuclear 1.55 refuses remote callers
+
+Fiouri's Nuclear auto-updated to 1.55.0. Upstream commit `ad0a14f` (2026-11-01, `http_api/access.rs`) makes Jam answer 403 `{"error":"Forbidden"}` unless the caller is on a loopback, private or link-local address and the Host header is an IP address or `localhost`; Tailscale `100.64.0.0/10` is rejected explicitly (upstream test), and so are host names. From the S23 over Tailscale: 403; over the LAN: OK. The signed 1.0.0 build was therefore not released.
+
+Change for 1.0.0:
+
+- `parseHostEntry` (manual PC entry) accepts IPv4/IPv6 literals only (`isIpAddress` in `src/net/guard.ts`); host names, MagicDNS names and `localhost` get "Enter an IP address like …".
+- `JamError` kind `forbidden` for HTTP 403 (`isJamForbidden`). Pairing shows "Nuclear refused the connection. Use the PC's address on your Wi-Fi (for example 192.168.1.20); Nuclear does not accept remote connections." instead of "did not answer"; the PC store's `lastError` is now formatted text (`pcErrorText`), so remote actions show the same explanation.
+- The event stream stops for good on a 403 (`SseHandlers.onRefused`) instead of retrying forever, and the PC tab shows the same explanation: a PC saved by host name or Tailscale address before this change ends as "Disconnected" with the message, not as endless "Reconnecting".
+- The "Send to PC" failure toast reads "Could not send to the PC. Nuclear: …" (the store's `lastError` already carries the "Nuclear:" prefix).
+- `isIpAddress` is stricter than the guard's parsers: no leading zeros in IPv4 octets, and an IPv6 zone index must be letters, digits, `.`, `_` or `-`. IPv4-mapped IPv6 (`::ffff:a.b.c.d`) is not accepted as an entry.
+- Hint, placeholder and the not-private message no longer mention Tailscale or MagicDNS. The cleartext guard is unchanged.
+- Code review (subagent): no MUST-FIX; its SHOULD-FIX items (event stream 403, toast prefix) and NITs (zone index, leading zeros, M3 exit criterion in SPEC) applied. No component tests for the PC screens exist; the 403 handling is covered at client, stream and store level.
+- Docs: README (the Tailscale section and firewall rule removed, same-Wi-Fi only), CHANGELOG, fastlane full description, SPEC (Decisions, §5, risks; v1.1: `GET /api/playlists` in Nuclear 1.55 for a direct playlist import), DOGFOOD (step 2).
+
+### Step 2 (manual checks)
+
+- Tailscale pairing: not possible by design upstream (above).
+- Real Nuclear export (Nuclear 1.55, `{ version: 1, playlist }`, 11 tracks, one twice) imported on the S23: "0 matched, 11 not on this phone". Correct: none of the 11 tracks is in the phone's library (compared with MediaStore). The track names stay out of the repo.
+- Wi-Fi only on mobile data: untested, no SIM with data.
+
+### Verification (LAN-only pairing change)
+
+| Check                                                                                   | Result                                                                                                                                                                                                                                                                                                                                     |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run typecheck`, `npm run lint`                                                     | Pass                                                                                                                                                                                                                                                                                                                                       |
+| `npm test -- --ci`                                                                      | Pass, 43 suites / 366 tests (+6: 403 in the client, the event stream and the store; IP-only entry; `isIpAddress`)                                                                                                                                                                                                                          |
+| `.\scripts\check-privacy.ps1`, `prettier --check .`                                     | Pass                                                                                                                                                                                                                                                                                                                                       |
+| `npm run android:prebuild`, `gradlew lint assembleRelease -Paulos.unsignedRelease=true` | Pass; lint 0 errors                                                                                                                                                                                                                                                                                                                        |
+| API 36, unsigned release x86_64 signed with the debug key, fresh install, mock-jam      | `m3-pair-manual`, `m3-pc-queue`, `m3-remote-controls`, `m4-about` 4/4; a session-only flow against a local server that answers every request with 403 `{"error":"Forbidden"}` (10.0.2.2:4126): `my-pc.local` gets "Enter an IP address like …", and the 403 shows "Nuclear refused the connection. …" (screenshot checked). No Aulos crash |
+| S23                                                                                     | Not re-run on this change: the S23 holds the release-key 1.0.0, and the next signed build (Fiouri) gets the full S23 suite                                                                                                                                                                                                                 |

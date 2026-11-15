@@ -17,6 +17,8 @@ Binding copy for implementation. Discussion copy: Claude Doc "Android Music App 
 | Cleartext HTTP | Allowed only to private-network hosts (LAN, Tailscale 100.64/10, link-local), enforced in app code; everything else HTTPS only (M3) |
 | Languages | English only in v1; all UI strings go through i18n so a translation can be added later without code changes |
 | Jamendo | Deferred (2026-10-24): not in v1; may be added later as another provider |
+| Nuclear Jam access (Nuclear 1.55+) | 2026-11-15: since upstream commit `ad0a14f` (2026-11-01, `http_api/access.rs`) Jam answers 403 unless the caller is on a loopback, private or link-local address and the Host header is an IP address or `localhost`; Tailscale `100.64.0.0/10` and host names (MagicDNS) are refused. 1.0.0: the remote is same-Wi-Fi only, manual pairing takes IP addresses only, and a 403 shows "Nuclear refused the connection…". The cleartext guard is unchanged |
+| Playlist import from the PC (v1.1) | Nuclear 1.55 has `GET /api/playlists` (`routes.rs`): v1.1 imports playlists straight from the paired PC; 1.0.0 keeps the JSON export/import |
 | Build-tool dependency overrides | 2026-11-14: npm `overrides` pin `node-forge` ^1.4.3 (GHSA-86w9-cpqp-85rv and the other 1.4.0 advisories), Expo CLI build-time tooling, not in the APK. The `@expo/cli` → `zod` override (GHSA-mrhx-c7xc-m3w5) was removed on 2026-11-14: `@expo/cli` 58.1.20 no longer depends on zod. No HIGH finding is accepted. Re-check on every Expo patch release (incl. `npx expo start --dev-client`) and drop the override once Expo ships the fixed version |
 | 1.0.0 release gate | 2026-11-13: the rc.1 dogfood was light use, not 7 days of daily use; no crash or bug seen, and the S23 crash logs held on 2026-11-13 (recent days only) are clean. Fiouri accepted releasing 1.0.0 on that basis; the GitHub release is created only after the full Maestro suite passes on the S23 with the signed 1.0.0 installed over rc.1 |
 
@@ -117,23 +119,24 @@ Not in v1: SoundCloud (API keys need a paid Artist Pro subscription), Spotify (n
 
 ## 5. Desktop sync with Nuclear
 
-Nuclear Jam's HTTP API binds to `0.0.0.0` on ports 4120–4129 (reachable over LAN and Tailscale) and has no authentication. Remote control needs no change to Nuclear.
+Nuclear Jam's HTTP API binds to `0.0.0.0` on ports 4120–4129 and has no authentication. Since Nuclear 1.55 (`http_api/access.rs`) it answers only callers on loopback, private and link-local addresses whose Host header is an IP address or `localhost`; everything else, Tailscale `100.64.0.0/10` and host names included, gets 403 `{"error":"Forbidden"}`. Remote control therefore works on the PC's own Wi-Fi only, and needs no change to Nuclear.
 
 | Feature | Endpoint(s) | Works today |
 | --- | --- | --- |
-| Pair by LAN discovery or manual host | probe `/api/health` on ports 4120–4129 | Yes |
+| Pair by LAN discovery or manual IP address | probe `/api/health` on ports 4120–4129 | Yes (same Wi-Fi) |
 | Live now-playing and queue | `GET /api/events` (SSE: `queue`, `playback`, `settings`) | Yes |
 | Play, pause, next, previous, seek, volume, shuffle, repeat | `POST /api/playback/*` | Yes |
 | Search on the PC and send tracks to its queue | `POST /api/search`, `POST /api/queue/add` | Yes |
 | Favorite the PC's current track | `POST /api/favorites/tracks/add` | Yes |
 | Lyrics of the PC's current track | `GET /api/lyrics/current` | Yes |
-| Import the PC's playlists and favorites | No read endpoint exists | No |
+| Import the PC's playlists | `GET /api/playlists` (Nuclear 1.55+, `routes.rs`) | v1.1 |
+| Import the PC's favorites | No read endpoint | No |
 
 v1 import path: Nuclear exports playlists as JSON; the phone imports those files via the share sheet or file picker. Track refs are re-resolved through the matching provider; unresolved items stay marked "not available offline". Imports are one-way and additive; a re-import updates the playlist with the same Nuclear id and never deletes phone-only items.
 
 No upstream PR: Nuclear does not accept code contributions. Reading the PC's playlists and favorites directly is evaluated in M3 as an "Aulos Link" Nuclear plugin that would use the existing Jam settings endpoints as a mailbox (spike only).
 
-Reference: nukeop/nuclear `packages/docs/integrations/http-api.md`, `packages/player/src-tauri/src/http_api/mod.rs` at commit `5221018` (2026-10-22).
+Reference: nukeop/nuclear `packages/docs/integrations/http-api.md`, `packages/player/src-tauri/src/http_api/mod.rs` at commit `5221018` (2026-10-22); access rule `http_api/access.rs` and `GET /api/playlists` in `routes.rs` as of commit `ad0a14f` (2026-11-01, Nuclear 1.55).
 
 ## 6. Data model
 
@@ -172,7 +175,8 @@ Every release ships the APK and its SHA-256 checksum, built locally with `gradle
 | YouTube terms / takedown requests | Repo or release takedown | YouTube provider in its own repo |
 | Play copyright policy bans unauthorised download apps | `full` can never be listed | Only `clean` is a store candidate |
 | Jam API has no authentication | Anyone on the same network controls the PC player | Warn in pairing UI; Windows firewall: allow Nuclear on Private networks only; turn Jam off on public Wi-Fi |
-| Cleartext HTTP to the PC | LAN traffic to Jam is unencrypted | App-level guard allows HTTP only to private-network hosts; Tailscale encrypts remote use |
+| Cleartext HTTP to the PC | LAN traffic to Jam is unencrypted | App-level guard allows HTTP only to private-network hosts; Nuclear 1.55+ itself answers only its local network |
+| Nuclear changes Jam's access rules or API | The remote stops working for some setups (1.55 refused Tailscale and host names) | Typed 403 error with an explanation in the app; Maestro M3 flows against the real Nuclear before each release; re-check upstream `http_api/` on Nuclear updates |
 | OEM battery killers stop background audio | Playback stops with screen off | Media foreground service via lock-screen controls; one-time battery-optimisation prompt |
 | Play personal accounts need 12 testers for 14 days | Delay before a `clean` listing | Not needed for v1; recheck rule before any store plan |
 
@@ -185,7 +189,7 @@ None starts until the previous gate passes on a real phone.
 | M0 Foundation | Expo SDK 58 project, TS strict, lint, Jest; SQLite schema and migrations; Kotlin MediaStore module; i18n scaffolding | Release APK builds locally with Gradle; typecheck, lint and tests pass with 0 warnings; app starts on a real phone and shows the scanned track count |
 | M1 Offline player | Library browse, queue, gapless, background; lock screen, Bluetooth, sleep timer; playlists, favorites, history; FTS search that ignores accents (Greek tonos included); R8 minify and resource shrinking on release | 2,000-track scan under 30 s; 1 h screen-off playback with no stop; cold start under 2 s; all Maestro flows pass on the S23 and on an API 31 emulator |
 | M2 Sources and downloads | SourceProvider interface; Internet Archive; downloads with resume and storage limit | Search, stream and download a track, then play it in airplane mode; provider tests use recorded HTTP fixtures |
-| M3 Nuclear pairing | LAN discovery and manual pairing, live remote over SSE; PC search and send to the PC queue; import Nuclear JSON playlists; Aulos Link plugin spike | Control the PC over LAN and Tailscale; an imported Nuclear playlist plays on the phone; spike report with go/no-go |
+| M3 Nuclear pairing | LAN discovery and manual pairing, live remote over SSE; PC search and send to the PC queue; import Nuclear JSON playlists; Aulos Link plugin spike | Control the PC over LAN and Tailscale (Tailscale void since Nuclear 1.55, see Decisions); an imported Nuclear playlist plays on the phone; spike report with go/no-go |
 | M4 Release | English UI; app icon; ABI splits; release signing; `clean` flavour; public repo `anywecon/aulos`; signed APKs and SHA-256 on GitHub Releases | RC: full suite on the S23, fresh install on API 31 and API 36 emulators, F-Droid metadata ready; final: 7 days of daily use on the S23 with zero crashes |
 
 Verification gate (every milestone and in CI):
