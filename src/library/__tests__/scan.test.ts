@@ -5,7 +5,7 @@ import { mediaAudio } from '../../../test/fixtures';
 import { openNodeDb, type NodeDb } from '../../../test/node-db';
 import { migrate } from '../../db/migrate';
 import { MIGRATIONS } from '../../db/migrations';
-import { countLocalTracks, scanLibrary } from '../scan';
+import { countLocalTracks, scanLibrary, shouldHoldRemovals } from '../scan';
 
 jest.mock('../../../modules/media-store', () => ({ queryAudio: jest.fn() }));
 
@@ -29,7 +29,14 @@ describe('scanLibrary', () => {
       query: async () => [audio('1'), audio('2')],
       now: clock(),
     });
-    expect(result).toEqual({ added: 2, updated: 0, removed: 0, total: 2, durationMs: 500 });
+    expect(result).toEqual({
+      added: 2,
+      updated: 0,
+      removed: 0,
+      total: 2,
+      durationMs: 500,
+      held: 0,
+    });
     expect(await countLocalTracks(db)).toBe(2);
     expect(
       await db.getFirst(
@@ -152,5 +159,107 @@ describe('scanLibrary', () => {
       year: 1960,
       added_at: 42,
     });
+  });
+});
+
+describe('removal guard', () => {
+  let db: NodeDb;
+  beforeEach(async () => {
+    db = openNodeDb();
+    await migrate(db, MIGRATIONS);
+  });
+  afterEach(() => db.close());
+
+  const ids = (n: number, from = 1) => Array.from({ length: n }, (_, i) => String(from + i));
+  const library = (refs: string[]) => refs.map((ref) => audio(ref));
+
+  /** One playlist with every local track, a favourite and a play for each. */
+  const collect = async () => {
+    await db.run("INSERT INTO playlists (id, name, created_at, updated_at) VALUES (1, 'p', 0, 0)");
+    const rows = await db.getAll<{ id: number }>('SELECT id FROM tracks ORDER BY id');
+    for (const [position, { id }] of rows.entries()) {
+      await db.run(
+        'INSERT INTO playlist_items (playlist_id, position, track_id) VALUES (1, ?, ?)',
+        [position, id],
+      );
+      await db.run("INSERT INTO favorites (kind, key, added_at) VALUES ('track', ?, 0)", [
+        String(id),
+      ]);
+      await db.run('INSERT INTO history (track_id, played_at, ms_played) VALUES (?, 0, 1000)', [
+        id,
+      ]);
+    }
+  };
+  const n = async (sql: string) => (await db.getFirst<{ n: number }>(sql))?.n;
+  const counts = async () => ({
+    tracks: await countLocalTracks(db),
+    items: await n('SELECT COUNT(*) AS n FROM playlist_items'),
+    favorites: await n('SELECT COUNT(*) AS n FROM favorites'),
+    history: await n('SELECT COUNT(*) AS n FROM history'),
+  });
+
+  it('decides when missing tracks look like a storage or permission problem', () => {
+    expect(shouldHoldRemovals(3, 0, 3)).toBe(true);
+    expect(shouldHoldRemovals(3, 2, 1)).toBe(false);
+    expect(shouldHoldRemovals(20, 9, 11)).toBe(true);
+    expect(shouldHoldRemovals(20, 10, 10)).toBe(false);
+    expect(shouldHoldRemovals(19, 1, 18)).toBe(false);
+    expect(shouldHoldRemovals(5, 0, 0)).toBe(false);
+  });
+
+  it('keeps everything when the MediaStore returns nothing', async () => {
+    await scanLibrary(db, { query: async () => library(ids(3)) });
+    await collect();
+    const result = await scanLibrary(db, { query: async () => [] });
+    expect(result).toMatchObject({ added: 0, removed: 0, held: 3, total: 3 });
+    expect(await counts()).toEqual({ tracks: 3, items: 3, favorites: 3, history: 3 });
+  });
+
+  it('refuses to remove more than half of 20+ tracks, then removes them once confirmed', async () => {
+    await scanLibrary(db, { query: async () => library(ids(20)) });
+    await collect();
+    // 11 of 20 gone and one new file: the addition is kept, nothing is removed.
+    const smaller = library([...ids(9), '99']);
+    const held = await scanLibrary(db, { query: async () => smaller });
+    expect(held).toMatchObject({ added: 1, removed: 0, held: 11, total: 21 });
+    expect(await counts()).toEqual({ tracks: 21, items: 20, favorites: 20, history: 20 });
+
+    const confirmed = await scanLibrary(db, { query: async () => smaller, allowRemovals: true });
+    expect(confirmed).toMatchObject({ added: 0, removed: 11, held: 0, total: 10 });
+    expect(await counts()).toEqual({ tracks: 10, items: 9, favorites: 9, history: 9 });
+  });
+
+  it('still removes a few missing tracks with their playlist entries, favourites and history', async () => {
+    await scanLibrary(db, { query: async () => library(ids(20)) });
+    await collect();
+    const result = await scanLibrary(db, { query: async () => library(ids(10)) });
+    expect(result).toMatchObject({ removed: 10, held: 0, total: 10 });
+    expect(await counts()).toEqual({ tracks: 10, items: 10, favorites: 10, history: 10 });
+  });
+
+  it('does not count tracks in excluded folders as missing', async () => {
+    const files = ids(20).map((ref, i) =>
+      audio(ref, { folder: i < 12 ? 'Music/Podcasts/' : 'Music/Keep/' }),
+    );
+    await scanLibrary(db, { query: async () => files });
+    const result = await scanLibrary(db, {
+      query: async () => files,
+      excludedFolders: ['Music/Podcasts/'],
+    });
+    expect(result).toMatchObject({ removed: 12, held: 0, total: 8 });
+  });
+
+  it('still applies a folder exclusion when it holds back missing tracks', async () => {
+    const files = ids(24).map((ref, i) =>
+      audio(ref, { folder: i < 4 ? 'Music/Podcasts/' : 'Music/Keep/' }),
+    );
+    await scanLibrary(db, { query: async () => files });
+    // 4 excluded files still on the phone, 14 of the other 20 gone (14 of 24 > 50 %).
+    const result = await scanLibrary(db, {
+      query: async () => files.filter((_, i) => i < 10),
+      excludedFolders: ['Music/Podcasts/'],
+    });
+    expect(result).toMatchObject({ removed: 4, held: 14, total: 20 });
+    expect(await countLocalTracks(db)).toBe(20);
   });
 });

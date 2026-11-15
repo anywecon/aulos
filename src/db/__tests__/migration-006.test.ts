@@ -4,6 +4,7 @@
 import { openNodeDb, type NodeDb } from '../../../test/node-db';
 import { migrate } from '../migrate';
 import { MIGRATIONS } from '../migrations';
+import { deleteOrphanRows } from '../migrations/006_orphan_rows';
 
 const V5 = MIGRATIONS.filter((m) => m.version <= 5);
 
@@ -43,11 +44,21 @@ describe('migration 006 (orphan rows)', () => {
     await db.run('DELETE FROM tracks WHERE id = 2');
     await db.exec('PRAGMA foreign_keys = ON');
   });
-  afterEach(() => db.close());
+  let info: jest.SpyInstance;
+  beforeEach(() => {
+    info = jest.spyOn(console, 'info').mockImplementation(() => undefined);
+  });
+  afterEach(() => {
+    info.mockRestore();
+    db.close();
+  });
 
-  it('removes playlist items, history and downloads of deleted tracks', async () => {
+  it('removes only rows whose track is gone, and logs the counts', async () => {
     expect(await count(db, 'playlist_items')).toBe(2);
     expect(await migrate(db, MIGRATIONS)).toEqual([6]);
+    expect(info).toHaveBeenCalledWith(
+      'Aulos migration 006: orphan rows removed {"playlistItems":1,"history":1,"downloads":1,"trackFavorites":1}',
+    );
     expect(await db.getAll('SELECT track_id FROM playlist_items')).toEqual([{ track_id: 1 }]);
     expect(await db.getAll('SELECT track_id FROM history')).toEqual([{ track_id: 1 }]);
     expect(await db.getAll('SELECT track_id FROM downloads')).toEqual([{ track_id: 1 }]);
@@ -57,5 +68,49 @@ describe('migration 006 (orphan rows)', () => {
     ]);
     expect(await count(db, 'tracks')).toBe(1);
     expect(await db.getAll('PRAGMA foreign_key_check')).toEqual([]);
+  });
+
+  it('changes nothing when every row points at an existing track', async () => {
+    await db.run('PRAGMA foreign_keys = OFF');
+    await db.run('DELETE FROM playlist_items WHERE track_id = 2');
+    await db.run('DELETE FROM history WHERE track_id = 2');
+    await db.run('DELETE FROM downloads WHERE track_id = 2');
+    await db.run("DELETE FROM favorites WHERE kind = 'track' AND key = '2'");
+    await db.run('PRAGMA foreign_keys = ON');
+    const snapshot = async () => ({
+      items: await db.getAll('SELECT * FROM playlist_items ORDER BY position'),
+      history: await db.getAll('SELECT * FROM history ORDER BY id'),
+      downloads: await db.getAll('SELECT * FROM downloads ORDER BY track_id'),
+      favorites: await db.getAll('SELECT * FROM favorites ORDER BY kind, key'),
+    });
+    const before = await snapshot();
+    expect(await deleteOrphanRows(db)).toEqual({
+      playlistItems: 0,
+      history: 0,
+      downloads: 0,
+      trackFavorites: 0,
+    });
+    expect(await snapshot()).toEqual(before);
+    expect(before.items).toHaveLength(1);
+    expect(before.favorites).toHaveLength(2);
+  });
+
+  it('logs zero counts on a library without orphans, and nothing on a fresh install', async () => {
+    await db.run('PRAGMA foreign_keys = OFF');
+    await db.run('DELETE FROM playlist_items WHERE track_id = 2');
+    await db.run('DELETE FROM history WHERE track_id = 2');
+    await db.run('DELETE FROM downloads WHERE track_id = 2');
+    await db.run("DELETE FROM favorites WHERE kind = 'track' AND key = '2'");
+    await db.run('PRAGMA foreign_keys = ON');
+    expect(await migrate(db, MIGRATIONS)).toEqual([6]);
+    expect(info).toHaveBeenCalledWith(
+      'Aulos migration 006: orphan rows removed {"playlistItems":0,"history":0,"downloads":0,"trackFavorites":0}',
+    );
+
+    info.mockClear();
+    const fresh = openNodeDb();
+    expect(await migrate(fresh, MIGRATIONS)).toEqual([1, 2, 3, 4, 5, 6]);
+    fresh.close();
+    expect(info).not.toHaveBeenCalled();
   });
 });

@@ -43,6 +43,13 @@ export const en = {
     grantAccess: 'Grant access',
     openSettings: 'Open settings',
     scanFailed: 'Scan failed: {{message}}',
+    removalsHeld:
+      'Library looks empty or much smaller than before; nothing was removed. Check the music permission and storage, then scan again.',
+    removeMissing: 'Remove missing tracks',
+    removeMissingTitle: 'Remove missing tracks?',
+    removeMissingMessage:
+      'Tracks that are no longer found on this phone are removed from the library, together with their playlist entries, favorites and history.',
+    removeMissingConfirm: 'Remove',
     sections: {
       songs: 'Songs',
       albums: 'Albums',

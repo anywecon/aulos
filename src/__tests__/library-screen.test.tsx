@@ -1,6 +1,7 @@
 import '@/i18n';
 
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { act, render, screen, userEvent } from '@testing-library/react-native';
+import { Alert, type AlertButton } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { queryAudio } from '../../modules/media-store';
@@ -108,5 +109,40 @@ describe('<LibraryStatus /> with the library lifecycle', () => {
 
     expect(await screen.findByTestId('permission-blocked')).toBeOnTheScreen();
     expect(screen.queryByTestId('scan-button')).toBeNull();
+  });
+
+  it('holds back removals when the music disappears, and removes them after a confirm', async () => {
+    mockCheck.mockResolvedValue(true);
+    mockQuery.mockResolvedValue([audio('1'), audio('2'), audio('3')]);
+    await renderScreen();
+    expect(await screen.findByText('3 added · 0 updated · 0 removed')).toBeOnTheScreen();
+
+    mockQuery.mockResolvedValue([]);
+    const user = userEvent.setup();
+    await user.press(screen.getByTestId('scan-button'));
+    expect(await screen.findByTestId('removals-held')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Library looks empty or much smaller than before; nothing was removed. Check the music permission and storage, then scan again.',
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.getByTestId('track-count')).toHaveTextContent('3');
+    expect(screen.queryByTestId('library-empty')).toBeNull();
+
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await user.press(screen.getByTestId('remove-missing'));
+    expect(alert).toHaveBeenCalledTimes(1);
+    const [title, , buttons] = alert.mock.calls[0] ?? [];
+    expect(title).toBe('Remove missing tracks?');
+    const remove = (buttons as AlertButton[] | undefined)?.find((b) => b.style === 'destructive');
+    expect(remove?.text).toBe('Remove');
+    alert.mockRestore();
+
+    await act(async () => {
+      remove?.onPress?.();
+    });
+    expect(await screen.findByText('0 added · 0 updated · 3 removed')).toBeOnTheScreen();
+    expect(screen.queryByTestId('removals-held')).toBeNull();
+    expect(screen.getByTestId('track-count')).toHaveTextContent('0');
   });
 });

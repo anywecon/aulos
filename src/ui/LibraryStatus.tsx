@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Linking, StyleSheet, View } from 'react-native';
+import { Alert, Linking, StyleSheet, View } from 'react-native';
 
 import { useDb } from '@/db/DbProvider';
 import { useLibraryStore } from '@/stores/library';
@@ -24,6 +24,16 @@ export function LibraryStatus() {
   const onScan = () => void useLibraryStore.getState().scan(db);
   const onGrant = () => void useLibraryStore.getState().requestPermission();
   const onOpenSettings = () => void Linking.openSettings();
+  const held = lastScan?.result.held ?? 0;
+  const onRemoveMissing = () =>
+    Alert.alert(t('library.removeMissingTitle'), t('library.removeMissingMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('library.removeMissingConfirm'),
+        style: 'destructive',
+        onPress: () => void useLibraryStore.getState().scan(db, { allowRemovals: true }),
+      },
+    ]);
 
   const lastScanText = lastScan
     ? t('library.lastScan', {
@@ -104,6 +114,18 @@ export function LibraryStatus() {
         <AppText variant="error" testID="scan-error">
           {t('library.scanFailed', { message: error })}
         </AppText>
+      )}
+
+      {held > 0 && !scanning && (
+        <Card testID="removals-held">
+          <AppText>{t('library.removalsHeld')}</AppText>
+          <Button
+            testID="remove-missing"
+            label={t('library.removeMissing')}
+            variant="secondary"
+            onPress={onRemoveMissing}
+          />
+        </Card>
       )}
 
       {permission === 'granted' && lastScan && totalTracks === 0 && !scanning && (

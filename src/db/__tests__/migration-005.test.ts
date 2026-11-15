@@ -27,7 +27,12 @@ describe('migration 005 (sources and downloads)', () => {
   afterEach(() => db.close());
 
   it('adds the cache table, licence columns and the M2 downloads table', async () => {
-    expect(await migrate(db, MIGRATIONS)).toEqual([5, 6]);
+    expect(
+      await migrate(
+        db,
+        MIGRATIONS.filter((m) => m.version <= 5),
+      ),
+    ).toEqual([5]);
     expect(await columns(db, 'http_cache')).toEqual(['key', 'body', 'fetched_at', 'ttl_s']);
     expect(await columns(db, 'tracks')).toEqual(
       expect.arrayContaining(['license_url', 'attribution']),

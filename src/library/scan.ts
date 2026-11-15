@@ -19,6 +19,11 @@ export interface ScanResult {
   removed: number;
   total: number;
   durationMs: number;
+  /**
+   * Tracks missing from the MediaStore that were kept because the scan looked like a storage or
+   * permission problem (see shouldHoldRemovals); 0 or absent when nothing was held back.
+   */
+  held?: number;
 }
 
 export interface ScanOptions {
@@ -26,6 +31,32 @@ export interface ScanOptions {
   now?: () => number;
   /** Folders (and their subfolders) left out of the library. */
   excludedFolders?: readonly string[];
+  /** The user confirmed that the missing tracks are really gone: remove them however many. */
+  allowRemovals?: boolean;
+}
+
+/** Below this many local tracks, a large share going missing is not suspicious. */
+export const REMOVAL_GUARD_MIN_TRACKS = 20;
+/** More than this share of the local tracks missing in one scan holds every removal back. */
+export const REMOVAL_GUARD_SHARE = 0.5;
+
+/**
+ * True when tracks missing from the MediaStore should be kept: it returned nothing while the
+ * library has local tracks, or more than half of at least 20 local tracks went missing at once.
+ * That looks like a revoked permission, an unmounted SD card or a MediaStore rebuilt after an OS
+ * update rather than deleted music, and removing them would also remove their playlist entries,
+ * favourites and history for good.
+ */
+export function shouldHoldRemovals(
+  storedCount: number,
+  mediaStoreCount: number,
+  missingCount: number,
+): boolean {
+  if (missingCount === 0) return false;
+  if (mediaStoreCount === 0) return true;
+  return (
+    storedCount >= REMOVAL_GUARD_MIN_TRACKS && missingCount > storedCount * REMOVAL_GUARD_SHARE
+  );
 }
 
 async function getStoredLocalTracks(db: Db): Promise<StoredLocalTrack[]> {
@@ -52,12 +83,21 @@ function normColumns(t: LocalTrackFields) {
 /**
  * Syncs the 'local' rows of `tracks` with the MediaStore in one transaction:
  * inserts new files, updates changed ones and deletes rows whose file is gone or whose folder
- * is excluded. The caller must hold the audio read permission.
+ * is excluded. Rows whose file is gone are kept when shouldHoldRemovals says the scan looks like
+ * a storage or permission problem, unless `allowRemovals`. The caller must hold the audio read
+ * permission.
  */
 export async function scanLibrary(db: Db, options: ScanOptions = {}): Promise<ScanResult> {
-  const { query = queryAudio, now = Date.now, excludedFolders = [] } = options;
+  const {
+    query = queryAudio,
+    now = Date.now,
+    excludedFolders = [],
+    allowRemovals = false,
+  } = options;
   const started = now();
-  const audio = (await query()).filter((a) => !isFolderExcluded(a.folder, excludedFolders));
+  const all = await query();
+  const onDevice = new Set(all.map((a) => a.id));
+  const audio = all.filter((a) => !isFolderExcluded(a.folder, excludedFolders));
   const albumKeys = albumGroupKeys(audio.map(toGroupedFields));
   const scanned = audio.map((a, i) => toTrackFields(a, albumKeys[i] ?? null));
   const scannedAt = now();
@@ -65,6 +105,14 @@ export async function scanLibrary(db: Db, options: ScanOptions = {}): Promise<Sc
   const diff = await db.transaction(async (tx) => {
     const stored = await getStoredLocalTracks(tx);
     const result = diffLocalTracks(stored, scanned);
+    // Rows in an excluded folder are still on the device: removing them is the user's choice.
+    const deleted = new Set(result.toDelete);
+    // Rows still on the device (in an excluded folder) are removed by the user's choice; only
+    // rows whose file the MediaStore no longer lists count as missing.
+    const missing = new Set(
+      stored.filter((t) => deleted.has(t.id) && !onDevice.has(t.providerRef)).map((t) => t.id),
+    );
+    const hold = !allowRemovals && shouldHoldRemovals(stored.length, all.length, missing.size);
     for (const t of result.toInsert) {
       await tx.run(
         `INSERT INTO tracks (provider, provider_ref, title, artist, album, album_artist, track_no,
@@ -119,7 +167,8 @@ export async function scanLibrary(db: Db, options: ScanOptions = {}): Promise<Sc
         ],
       );
     }
-    for (const id of result.toDelete) {
+    const toDelete = hold ? result.toDelete.filter((id) => !missing.has(id)) : result.toDelete;
+    for (const id of toDelete) {
       await tx.run('DELETE FROM tracks WHERE id = ?', [id]);
       // Track favourites are keyed by id as text (no foreign key), and SQLite reuses the highest
       // freed id: drop the favourite with its track so it never lands on a new one.
@@ -135,15 +184,16 @@ export async function scanLibrary(db: Db, options: ScanOptions = {}): Promise<Sc
         return from && t.albumKey && from !== t.albumKey ? [{ from, to: t.albumKey }] : [];
       }),
     );
-    return result;
+    return { ...result, toDelete, held: hold ? missing.size : 0 };
   });
 
   return {
     added: diff.toInsert.length,
     updated: diff.toUpdate.length,
     removed: diff.toDelete.length,
-    total: diff.total,
+    total: diff.total + diff.held,
     durationMs: now() - started,
+    held: diff.held,
   };
 }
 

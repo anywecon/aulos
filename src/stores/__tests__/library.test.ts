@@ -4,7 +4,7 @@
 import { getVersion, queryAudio } from '../../../modules/media-store';
 import { mediaAudio } from '../../../test/fixtures';
 import { openNodeDb, type NodeDb } from '../../../test/node-db';
-import { getKv } from '../../db/kv';
+import { getKv, setKv } from '../../db/kv';
 import { migrate } from '../../db/migrate';
 import { MIGRATIONS } from '../../db/migrations';
 import { checkAudioPermission, requestAudioPermission } from '../../library/permission';
@@ -88,6 +88,31 @@ describe('library store', () => {
 
     expect(mockRequest).not.toHaveBeenCalled();
     expect(useLibraryStore.getState().permission).toBe('blocked');
+  });
+
+  it('holds back removals when the MediaStore comes back empty, then removes after a confirm', async () => {
+    mockCheck.mockResolvedValue(true);
+    await useLibraryStore.getState().start(db);
+    mockQuery.mockResolvedValue([]);
+    await useLibraryStore.getState().scan(db);
+    expect(useLibraryStore.getState().totalTracks).toBe(3);
+    expect(useLibraryStore.getState().lastScan?.result).toMatchObject({ removed: 0, held: 3 });
+
+    await useLibraryStore.getState().scan(db, { allowRemovals: true });
+    expect(useLibraryStore.getState().totalTracks).toBe(0);
+    expect(useLibraryStore.getState().lastScan?.result).toMatchObject({ removed: 3, held: 0 });
+  });
+
+  it('loads a last scan saved before 1.0.0 without `held`, and ignores a malformed one', async () => {
+    mockCheck.mockResolvedValue(true);
+    const old = { at: 5, result: { added: 1, updated: 0, removed: 0, total: 1, durationMs: 9 } };
+    await setKv(db, LAST_SCAN_KEY, old);
+    await useLibraryStore.getState().load(db);
+    expect(useLibraryStore.getState().lastScan).toEqual(old);
+
+    await setKv(db, LAST_SCAN_KEY, { ...old, result: { ...old.result, held: '3' } });
+    await useLibraryStore.getState().load(db);
+    expect(useLibraryStore.getState().lastScan).toBeNull();
   });
 
   it('reports a failed scan and keeps the previous count', async () => {

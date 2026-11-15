@@ -27,8 +27,13 @@ export type ScanStatus = 'idle' | 'scanning' | 'error';
 
 function isScanResult(value: unknown): value is ScanResult {
   if (typeof value !== 'object' || value === null) return false;
-  return (['added', 'updated', 'removed', 'total', 'durationMs'] as const).every(
-    (k) => k in value && typeof (value as Record<string, unknown>)[k] === 'number',
+  const fields = value as Record<string, unknown>;
+  // `held` is absent in results saved before 1.0.0.
+  return (
+    (['added', 'updated', 'removed', 'total', 'durationMs'] as const).every(
+      (k) => typeof fields[k] === 'number',
+    ) &&
+    (fields.held === undefined || typeof fields.held === 'number')
   );
 }
 
@@ -54,8 +59,11 @@ interface LibraryState {
   load(db: Db): Promise<void>;
   /** Prompts for audio access; returns true when granted. */
   requestPermission(): Promise<boolean>;
-  /** Asks for access if needed, then scans the MediaStore into the database. */
-  scan(db: Db): Promise<void>;
+  /**
+   * Asks for access if needed, then scans the MediaStore into the database. `allowRemovals`:
+   * the user confirmed that missing tracks the last scan held back are really gone.
+   */
+  scan(db: Db, options?: { allowRemovals?: boolean }): Promise<void>;
   /** Scans only when the MediaStore changed since the last scan (cheap check on resume). */
   refreshIfChanged(db: Db): Promise<void>;
   /** First-screen flow: load, ask for access when missing, scan when never scanned or stale. */
@@ -100,7 +108,7 @@ export const useLibraryStore = create<LibraryState>()((set, get) => ({
     return permission === 'granted';
   },
 
-  async scan(db) {
+  async scan(db, { allowRemovals = false } = {}) {
     if (get().status === 'scanning') return;
     if (get().permission !== 'granted' && !(await get().requestPermission())) return;
 
@@ -108,7 +116,10 @@ export const useLibraryStore = create<LibraryState>()((set, get) => ({
     try {
       // Read the token first: a change during the scan then triggers one more scan later.
       const { token } = await getVersion();
-      const result = await scanLibrary(db, { excludedFolders: get().excludedFolders });
+      const result = await scanLibrary(db, {
+        excludedFolders: get().excludedFolders,
+        allowRemovals,
+      });
       // Imported Nuclear rows that were unavailable may now have a file on the phone.
       if (result.added + result.updated > 0) await rematchUnavailable(db);
       const lastScan: LastScan = { at: Date.now(), result };
