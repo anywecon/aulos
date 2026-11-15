@@ -23,6 +23,15 @@ use during its test period (not the planned seven days of daily use).
 - The source code moved to [github.com/anywecon/aulos](https://github.com/anywecon/aulos);
   Settings → About and the app's User-Agent now point there.
 
+### Fixed
+
+- A library scan could fail with "database is locked" when the app saved something at the same
+  moment; database writes now wait for each other.
+- Music removed from the phone left its entries behind in playlists (the playlist list counted
+  them, the playlist showed nothing), in the listening history and in track favourites. They are
+  now removed with the track, and the update cleans up what earlier versions left. A favourite
+  that an earlier version already moved onto a newer track cannot be told apart and stays.
+
 ### Security
 
 - Build tooling only, not part of the app: vulnerable `node-forge` and `zod` versions used by

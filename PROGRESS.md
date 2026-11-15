@@ -1,6 +1,6 @@
-**Current:** M4b 1.0.0 — first signed build verified (S23 14/14, emulators 13/13 runnable) but not released: Nuclear 1.55 refuses Tailscale and host names, so pairing is now same-Wi-Fi, IP only; waiting for a new signed build
+**Current:** M4b 1.0.0 — not released: the rebuilt signed 1.0.0 showed "database is locked" on the S23; transactions fixed (dedicated connection with foreign keys and busy timeout, orphan cleanup migration 006); waiting for a new signed build
 **Next step:** Fiouri re-runs `scripts\Build-Release.ps1` (versionCode base stays 10010: nothing was published); then Claude verifies dist/1.0.0, installs it over the current 1.0.0 on the S23, runs the full S23 suite and the emulator fresh installs, and creates the release only with Fiouri's yes
-**Last session:** 2026-11-15 — signed 1.0.0 verified (apksigner, S23 upgrade from rc.1 keeps data, S23 14/14 incl. real Nuclear 1.55 on LAN, API 36/31 13/13 runnable); Nuclear 1.55 access rule → IP-only pairing + 403 message, docs updated; step 2 recorded; typecheck, lint, 364 tests, privacy, prebuild, Gradle lint/release; earlier the same day better-sqlite3 pinned to ^12
+**Last session:** 2026-11-15 — signed builds verified (apksigner, S23 upgrade keeps data, S23 14/14 incl. real Nuclear 1.55, emulators 13/13 runnable); Nuclear 1.55 → IP-only pairing + 403 message; SQLite transaction bug (no foreign keys, no busy timeout in transactions) fixed with migration 006; typecheck, lint, 375 tests, privacy, prebuild, Gradle lint/release; Maestro on API 36 (see SESSIONS)
 
 ## M4b 1.0.0 (in progress, 2026-11-13)
 
@@ -9,7 +9,8 @@
 - **Open:** step 2 owner checks; step 4 signed build (owner); S23 full suite on the signed 1.0.0 over rc.1 before step 5; steps 5–6. Dependabot glob/minimatch: no PR (update runs fail, majors needed), Medium only. Pushed to main on 2026-11-14 with Fiouri's yes.
 - **2026-11-15:** step 4 first attempt stopped at `npm ci` (better-sqlite3 13.x needs a compiler); fixed by pinning ^12.11.1. Re-run `scripts\Build-Release.ps1`.
 - **2026-11-15 (part 2):** the signed build checked out (apksigner v2+v3, cert as published, checksums), S23 rc.1 → 1.0.0 kept its data, S23 suite 14/14, emulator fresh installs 13/13 runnable. Not released: Nuclear 1.55 (`http_api/access.rs`) answers 403 to Tailscale and to host names, so 1.0.0 now pairs by IP address on the same Wi-Fi only and explains a 403; README, CHANGELOG, SPEC, fastlane and DOGFOOD updated. Step 2: Tailscale not possible by design upstream; real Nuclear export imported (0 of 11 matched, correct: none of its tracks is on the phone); Wi-Fi only on mobile data untested (no SIM with data).
-- **Open risks:** Nuclear may change Jam again (re-check `http_api/` on Nuclear updates); a pairing saved by host name or Tailscale address before 1.0.0 only shows "Reconnecting" (none published).
+- **2026-11-15 (part 3):** the rebuilt 1.0.0 showed "Scan failed: database is locked" on the S23. expo-sqlite transactions ran on a new connection without foreign keys or busy timeout: scan deletes did not cascade (orphan playlist items, history, favourites). Fixed in `src/db/expo-db.ts` plus migration 006; reproduced and verified on the API 36 emulator. Needs another signed build.
+- **Open risks:** an empty or partial MediaStore result (unmounted SD card) removes those tracks with their playlist entries (SPEC risks, v1.1); Nuclear may change Jam again (re-check `http_api/` on Nuclear updates); a pairing saved by host name or Tailscale address before 1.0.0 only shows "Reconnecting" (none published).
 - **Device testing (owner):** DOGFOOD "also try once" items untested.
 
 ## Dependency scan 2026-11-11 (2026-11-13)

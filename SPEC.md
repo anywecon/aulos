@@ -176,6 +176,7 @@ Every release ships the APK and its SHA-256 checksum, built locally with `gradle
 | Play copyright policy bans unauthorised download apps | `full` can never be listed | Only `clean` is a store candidate |
 | Jam API has no authentication | Anyone on the same network controls the PC player | Warn in pairing UI; Windows firewall: allow Nuclear on Private networks only; turn Jam off on public Wi-Fi |
 | Cleartext HTTP to the PC | LAN traffic to Jam is unencrypted | App-level guard allows HTTP only to private-network hosts; Nuclear 1.55+ itself answers only its local network |
+| MediaStore returns nothing or a part of the library (SD card unmounted, index rebuilding) | The scan removes those tracks; their playlist entries, history and favourites go with them (before 1.0.0 they were orphaned, equally lost) | Known limitation of 1.0.0; v1.1: keep tracks whose storage volume is missing instead of deleting them |
 | Nuclear changes Jam's access rules or API | The remote stops working for some setups (1.55 refused Tailscale and host names) | Typed 403 error with an explanation in the app; Maestro M3 flows against the real Nuclear before each release; re-check upstream `http_api/` on Nuclear updates |
 | OEM battery killers stop background audio | Playback stops with screen off | Media foreground service via lock-screen controls; one-time battery-optimisation prompt |
 | Play personal accounts need 12 testers for 14 days | Delay before a `clean` listing | Not needed for v1; recheck rule before any store plan |
