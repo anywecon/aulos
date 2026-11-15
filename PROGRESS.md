@@ -1,12 +1,13 @@
 **Current:** M4b 1.0.0 — steps 0, 1, 3 done (housekeeping, dogfood recorded, version 1.0.0); waiting for owner steps 2 and 4
 **Next step:** Fiouri: manual checks (Tailscale pairing, real Nuclear export, Wi-Fi only on mobile data or documented untested), then `scripts\Build-Release.ps1`; then Claude checks dist/1.0.0, runs the full S23 suite on the signed 1.0.0 over rc.1, and creates the release only with Fiouri's yes
-**Last session:** 2026-11-14 — removed the inert `@expo/cli` zod override (osv 0 High, gate green, pushed); 2026-11-13: Expo SDK 58 patch update (expo-doctor 20/20), repo refs to anywecon/aulos, debug-build Maestro cause documented, 1.0.0 bump; typecheck, lint, 360 tests, privacy, prebuild, gradle lint/release, osv 0 High, gitleaks, Maestro API 36 and API 31 13/13 runnable green
+**Last session:** 2026-11-15 — better-sqlite3 pinned to ^12 (prebuilt Windows binary; Build-Release.ps1 `npm ci` failed on 13.x), test adapter fix for its cross-realm errors; clean `npm ci`, typecheck, lint, 360 tests, privacy, expo-doctor 20/20, osv 0 High; 2026-11-14: inert `@expo/cli` zod override removed; 2026-11-13: Expo SDK 58 patch update (expo-doctor 20/20), repo refs to anywecon/aulos, debug-build Maestro cause documented, 1.0.0 bump; typecheck, lint, 360 tests, privacy, prebuild, gradle lint/release, osv 0 High, gitleaks, Maestro API 36 and API 31 13/13 runnable green
 
 ## M4b 1.0.0 (in progress, 2026-11-13)
 
 - **Done:** step 0 (repo references → anywecon/aulos; Expo SDK 58 patch updates + expo-asset/expo-font, expo-doctor 20/20, node-forge override kept and re-checked, the `@expo/cli` zod override removed on 2026-11-14 because `@expo/cli` 58.1.20 no longer uses zod; debug-build Maestro cause found: UiAutomator idle wait under the React Native debug runtime, not app code; README says to run the suite on a release APK), step 1 (light, not daily dogfood; no crash or bug; Fiouri accepted 1.0.0 on that basis), step 3 (1.0.0, versionCode base 10010, CHANGELOG, fastlane changelogs).
 - **Verified:** typecheck, lint, 360 tests, privacy check, expo-doctor 20/20, prebuild, Gradle lint 0 errors, osv-scanner 0 High, gitleaks clean; Maestro on API 36 and API 31 with the 1.0.0 x86_64 release APK (debug key): 13/13 runnable each (the two Internet Archive flows are blocked by the PC's TLS proxy on emulators).
 - **Open:** step 2 owner checks; step 4 signed build (owner); S23 full suite on the signed 1.0.0 over rc.1 before step 5; steps 5–6. Dependabot glob/minimatch: no PR (update runs fail, majors needed), Medium only. Pushed to main on 2026-11-14 with Fiouri's yes.
+- **2026-11-15:** step 4 first attempt stopped at `npm ci` (better-sqlite3 13.x needs a compiler); fixed by pinning ^12.11.1. Re-run `scripts\Build-Release.ps1`.
 - **Device testing (owner):** Tailscale pairing by 100.x; a real Nuclear export via the share sheet; Wi-Fi only on mobile data; DOGFOOD "also try once" items untested.
 
 ## Dependency scan 2026-11-11 (2026-11-13)

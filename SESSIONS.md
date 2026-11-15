@@ -625,3 +625,36 @@ API 36 and API 31 emulators: test media pushed and removed (`-Mode clean`), Aulo
 -no-window`: the AVDs start with 2 GB otherwise, and a leftover crash-report dialog blocks a
 windowed start. The S23 was only read (crash buffer, DropBox, installed version) under a lock;
 rc.1 and its data are untouched.
+
+## 2026-11-15 — better-sqlite3 pinned to 12 (Build-Release.ps1 `npm ci` failure)
+
+Fiouri's `scripts\Build-Release.ps1` stopped at `npm ci`. better-sqlite3 13.x ships no install
+script or prebuilt binaries, so npm ran `node-gyp rebuild`, and node-gyp 11.5 cannot use Visual
+Studio Build Tools 2026 (v18). The devDependency is now `^12.11.1`, whose install is
+`prebuild-install || node-gyp rebuild --release` and whose release has a Node 22 (ABI 127)
+win32-x64 binary. node-gyp and Visual Studio were left as they are; `@types/better-sqlite3`
+^9.6.0 type-checks unchanged. No Aulos node, jest, Metro or Gradle process was running (the
+EPERM on `@testing-library/react-native` had no process behind it by the time of the check).
+
+- `npm ci --foreground-scripts` from an empty `node_modules`: prebuild-install downloaded the
+  binary, node-gyp did not run, `build/Release` holds only `better_sqlite3.node`.
+- better-sqlite3 12 registers its `SqliteError` constructor with the native addon once per
+  process (a function with `setPrototypeOf`, not an Error subclass). From the second Jest test
+  file in a worker on, SQLite errors come from another realm, are not `instanceof Error` there,
+  and `rejects.toThrow` reported "did not throw" (2–5 DB tests, varying with file order).
+  `test/node-db.ts` now re-throws such errors as local Errors (message, name, code). Test-only;
+  the app uses expo-sqlite.
+- Licence check of the new install-time devDependencies (prebuild-install 7.1.3 and its tree:
+  tar-fs, simple-get, node-abi, rc, napi-build-utils and others): MIT, ISC, Apache-2.0,
+  BSD-2-Clause/MIT/Apache-2.0 (rc), MIT/WTFPL (expand-template); all GPL-3.0-compatible. None
+  is in the APK. prebuild-install is marked deprecated upstream.
+
+| Check                         | Result                                              |
+| ----------------------------- | --------------------------------------------------- |
+| `npm ci` (clean, no compiler) | Pass, prebuilt binary                               |
+| `npm run typecheck`           | Pass                                                |
+| `npm run lint`                | Pass                                                |
+| `npm test -- --ci`            | Pass, 360 tests; also `-i` (in-band) twice, 360/360 |
+| `.\scripts\check-privacy.ps1` | Pass                                                |
+| `npx expo-doctor`             | 20/20                                               |
+| osv-scanner                   | 0 High; the same 5 Medium                           |
