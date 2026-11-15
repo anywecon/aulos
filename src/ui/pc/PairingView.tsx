@@ -6,7 +6,7 @@ import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useDb } from '@/db/DbProvider';
 import { isAbortError } from '@/net/errors';
 import { isPrivateHost } from '@/net/guard';
-import { createJamClient, jamBaseUrl } from '@/nuclear/client';
+import { createJamClient, isJamForbidden, jamBaseUrl } from '@/nuclear/client';
 import {
   discoverPcs,
   healthProbe,
@@ -126,10 +126,12 @@ export function PairingView() {
       await createJamClient({ baseUrl: jamBaseUrl(pc.host, pc.port) }).health();
       setEntryState({ checking: false, error: null });
       await connect(`${pc.host}:${pc.port}`, pc);
-    } catch {
+    } catch (error) {
       setEntryState({
         checking: false,
-        error: t('pc.noAnswer', { host: `${pc.host}:${pc.port}` }),
+        error: isJamForbidden(error)
+          ? t('pc.forbidden')
+          : t('pc.noAnswer', { host: `${pc.host}:${pc.port}` }),
       });
     }
   };

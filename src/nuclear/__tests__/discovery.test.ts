@@ -103,10 +103,6 @@ describe('discovery', () => {
       host: '100.101.102.103',
       port: 4122,
     });
-    expect(parseHostEntry('desktop.tail1234.ts.net')).toEqual({
-      host: 'desktop.tail1234.ts.net',
-      port: 4120,
-    });
     expect(parseHostEntry('http://192.168.1.40:4121/api')).toEqual({
       host: '192.168.1.40',
       port: 4121,
@@ -116,6 +112,13 @@ describe('discovery', () => {
     expect(parseHostEntry('')).toBeNull();
     expect(parseHostEntry('pc:99999')).toBeNull();
     expect(parseHostEntry('bad host')).toBeNull();
+  });
+
+  it('refuses host names: Nuclear 1.55+ accepts only an IP address in the Host header', () => {
+    expect(parseHostEntry('desktop.tail1234.ts.net')).toBeNull();
+    expect(parseHostEntry('my-pc:4121')).toBeNull();
+    expect(parseHostEntry('http://localhost:4120')).toBeNull();
+    expect(parseHostEntry('192.168.1.300')).toBeNull();
   });
 });
 

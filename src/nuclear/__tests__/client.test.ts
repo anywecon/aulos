@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { CleartextBlockedError } from '../../net/guard';
-import { createJamClient, jamBaseUrl, JamError } from '../client';
+import { createJamClient, isJamForbidden, jamBaseUrl, JamError } from '../client';
 import type { JamTrack } from '../schemas';
 
 /** A track as Nuclear's model shapes it (packages/model/src/index.ts). */
@@ -176,6 +176,15 @@ describe('Jam client', () => {
     expect(error.status).toBe(500);
     expect(error.serverMessage).toBe('Playback.toggle failed: no track in queue');
     expect(error.message).toBe('Playback.toggle failed: no track in queue');
+  });
+
+  it('reports the 403 access refusal of Nuclear as a forbidden error', async () => {
+    const { client } = setup(() => json({ error: 'Forbidden' }, 403));
+    const error = await client.health().catch((e: unknown) => e);
+    expect(error).toMatchObject({ kind: 'forbidden', status: 403, serverMessage: 'Forbidden' });
+    expect(isJamForbidden(error)).toBe(true);
+    expect(isJamForbidden(new JamError('http', 500))).toBe(false);
+    expect(isJamForbidden(new Error('Forbidden'))).toBe(false);
   });
 
   it('reports timeouts, unreachable hosts and invalid shapes as typed errors', async () => {

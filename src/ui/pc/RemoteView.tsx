@@ -218,7 +218,7 @@ export function RemoteView() {
 
       {pc.lastError !== null && (
         <AppText variant="error" testID="pc-error">
-          {t('pc.error', { message: pc.lastError })}
+          {pc.lastError}
         </AppText>
       )}
 

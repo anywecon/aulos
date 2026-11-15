@@ -4,12 +4,12 @@
 import { openNodeDb, type NodeDb } from '../../../test/node-db';
 import { migrate } from '../../db/migrate';
 import { MIGRATIONS } from '../../db/migrations';
-import { createJamClient } from '../../nuclear/client';
+import { createJamClient, JamError } from '../../nuclear/client';
 import { parseJamEvent } from '../../nuclear/events';
 import { listPairings, savePairing, type Pairing } from '../../nuclear/pairings';
 import type { JamTrack } from '../../nuclear/schemas';
 import type { SseHandlers } from '../../nuclear/sse';
-import { usePcStore } from '../pc';
+import { pcErrorText, usePcStore } from '../pc';
 
 jest.mock('react-native', () => ({
   AppState: { currentState: 'active', addEventListener: jest.fn() },
@@ -182,13 +182,35 @@ describe('PC store', () => {
     expect(calls.map((c) => c.url)).toEqual(['/api/search']);
   });
 
+  it('shows why Nuclear refused the event stream', () => {
+    usePcStore.getState().connect(pairing);
+    handlers?.onState('stopped');
+    handlers?.onRefused();
+    expect(usePcStore.getState()).toMatchObject({
+      connection: 'disconnected',
+      lastError: expect.stringMatching(/^Nuclear refused the connection\./) as unknown,
+    });
+  });
+
   it('keeps the last error instead of throwing, and disconnects cleanly', async () => {
     await usePcStore.getState().togglePlay();
-    expect(usePcStore.getState().lastError).toMatch(/unreachable/);
+    expect(usePcStore.getState().lastError).toBe('Nuclear: Nuclear request failed (unreachable)');
     usePcStore.getState().connect(pairing);
     const before = stopped;
     usePcStore.getState().disconnect();
     expect(stopped).toBe(before + 1);
     expect(usePcStore.getState()).toMatchObject({ connection: 'disconnected', pairing: null });
+  });
+});
+
+describe('pcErrorText', () => {
+  it("explains Nuclear's access refusal and passes other messages through", () => {
+    expect(pcErrorText(new JamError('forbidden', 403, 'Forbidden'))).toBe(
+      "Nuclear refused the connection. Use the PC's address on your Wi-Fi (for example 192.168.1.20); Nuclear does not accept remote connections.",
+    );
+    expect(
+      pcErrorText(new JamError('http', 500, 'Playback.toggle failed: no track in queue')),
+    ).toBe('Nuclear: Playback.toggle failed: no track in queue');
+    expect(pcErrorText('boom')).toBe('Nuclear: boom');
   });
 });

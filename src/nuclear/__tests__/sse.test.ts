@@ -85,6 +85,11 @@ class FakeXhr implements XhrLike {
     this.status = 0;
     this.onerror?.();
   }
+  refuse() {
+    this.readyState = 2;
+    this.status = 403;
+    this.onreadystatechange?.();
+  }
 }
 
 describe('SseConnection', () => {
@@ -97,6 +102,7 @@ describe('SseConnection', () => {
   let events: SseEvent[];
   let states: SseState[];
   let opens: number;
+  let refusals: number;
 
   const advance = (ms: number) => {
     now += ms;
@@ -122,6 +128,9 @@ describe('SseConnection', () => {
           opens += 1;
         },
         onState: (s) => states.push(s),
+        onRefused: () => {
+          refusals += 1;
+        },
       },
       {
         createXhr: () => {
@@ -162,6 +171,19 @@ describe('SseConnection', () => {
     events = [];
     states = [];
     opens = 0;
+    refusals = 0;
+  });
+
+  it('stops for good when Nuclear refuses the phone (403)', () => {
+    const connection = connect();
+    last().refuse();
+    expect(refusals).toBe(1);
+    expect(opens).toBe(0);
+    expect(connection.state).toBe('stopped');
+    expect(last().aborted).toBe(true);
+    advance(60_000);
+    appListener?.('active');
+    expect(xhrs).toHaveLength(1);
   });
 
   it('opens the stream and delivers events across chunks', () => {
@@ -257,7 +279,12 @@ describe('SseConnection', () => {
       () =>
         new SseConnection(
           'http://example.com/api/events',
-          { onEvent: () => undefined, onOpen: () => undefined, onState: () => undefined },
+          {
+            onEvent: () => undefined,
+            onOpen: () => undefined,
+            onState: () => undefined,
+            onRefused: () => undefined,
+          },
           {
             createXhr: () => new FakeXhr(),
             setTimeout: () => 0,

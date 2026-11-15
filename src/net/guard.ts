@@ -73,6 +73,22 @@ function isPrivateIpv6(hextets: number[]): boolean {
 }
 
 /**
+ * A strict IPv4 (no leading zeros) or IPv6 literal, IPv6 optionally bracketed or with a zone
+ * index of letters, digits, '.', '_' or '-'. Stricter than the guard's parsers: it decides what
+ * the pairing field sends as the Host header, which Nuclear parses as an IP address.
+ */
+export function isIpAddress(host: string): boolean {
+  const name = host
+    .trim()
+    .toLowerCase()
+    .replace(/^\[(.*)\]$/, '$1');
+  if (ipv4(name)) return name.split('.').every((part) => /^(0|[1-9]\d{0,2})$/.test(part));
+  const [address = '', zone, extra] = name.split('%');
+  if (extra !== undefined || (zone !== undefined && !/^[0-9a-z._-]+$/.test(zone))) return false;
+  return ipv6(address) !== null;
+}
+
+/**
  * Hosts on the user's own networks: RFC 1918 IPv4, Tailscale's CGNAT 100.64/10, link-local
  * 169.254/16, loopback 127/8, IPv6 link-local fe80::/10, unique local fd00::/8 and ::1, and
  * Tailscale MagicDNS names (*.ts.net). Case-insensitive; a trailing dot is ignored.

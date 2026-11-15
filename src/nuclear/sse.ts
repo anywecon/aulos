@@ -87,6 +87,7 @@ export const STALE_AFTER_MS = 45_000;
 /** responseText keeps every byte; past this size the stream is reopened to free it. */
 export const MAX_BUFFERED_CHARS = 2_000_000;
 
+const HEADERS_RECEIVED = 2;
 const DONE = 4;
 
 export interface SseHandlers {
@@ -94,6 +95,11 @@ export interface SseHandlers {
   /** The stream answered 200: events flow from here on (reload state now). */
   onOpen: () => void;
   onState: (state: SseState) => void;
+  /**
+   * The server answered 403: Nuclear 1.55+ refuses this phone (not on its local network, or not
+   * addressed by IP). The stream stops for good instead of retrying.
+   */
+  onRefused: () => void;
 }
 
 /**
@@ -172,6 +178,11 @@ export class SseConnection {
     this.#xhr = xhr;
     const read = () => {
       if (this.#xhr !== xhr) return;
+      if (xhr.readyState >= HEADERS_RECEIVED && xhr.status === 403) {
+        this.stop();
+        this.#handlers.onRefused();
+        return;
+      }
       if (xhr.readyState >= 3 && xhr.status === 200) {
         if (!this.#opened) {
           this.#opened = true;

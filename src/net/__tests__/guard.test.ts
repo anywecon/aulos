@@ -1,6 +1,7 @@
 import {
   assertRequestAllowed,
   CleartextBlockedError,
+  isIpAddress,
   isPrivateHost,
   isRequestAllowed,
   parseHttpUrl,
@@ -88,6 +89,26 @@ describe('isPrivateHost', () => {
     expect(isPrivateHost(' 10.1.2.3 ')).toBe(true);
     expect(isPrivateHost('8.8.8.8.')).toBe(false);
     expect(isPrivateHost('')).toBe(false);
+  });
+});
+
+describe('isIpAddress', () => {
+  it('accepts IPv4 and IPv6 literals only', () => {
+    expect(isIpAddress('192.168.1.20')).toBe(true);
+    expect(isIpAddress(' 10.0.0.5 ')).toBe(true);
+    expect(isIpAddress('fe80::1%wlan0')).toBe(true);
+    expect(isIpAddress('[FD00::5]')).toBe(true);
+    expect(isIpAddress('localhost')).toBe(false);
+    expect(isIpAddress('desktop.tail1234.ts.net')).toBe(false);
+    expect(isIpAddress('my-pc')).toBe(false);
+    expect(isIpAddress('192.168.1')).toBe(false);
+    expect(isIpAddress('192.168.1.256')).toBe(false);
+    expect(isIpAddress('')).toBe(false);
+    expect(isIpAddress('192.168.001.020')).toBe(false);
+    expect(isIpAddress('fe80::1%')).toBe(false);
+    expect(isIpAddress('fe80::1%a b')).toBe(false);
+    expect(isIpAddress('fe80::1%1%2')).toBe(false);
+    expect(isIpAddress('0.0.0.0')).toBe(true);
   });
 });
 

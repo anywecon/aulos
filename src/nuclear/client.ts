@@ -26,7 +26,12 @@ import {
 /** Actions and state reads give up after this long; the event stream has no timeout. */
 export const JAM_TIMEOUT_MS = 3000;
 
-export type JamErrorKind = 'unreachable' | 'timeout' | 'http' | 'invalidResponse';
+/**
+ * `forbidden`: Nuclear answered 403. Since Nuclear 1.55 (http_api/access.rs) Jam accepts only
+ * loopback, private and link-local callers whose Host header is an IP address or localhost, so
+ * Tailscale (100.64.0.0/10) and host names are refused.
+ */
+export type JamErrorKind = 'unreachable' | 'timeout' | 'http' | 'forbidden' | 'invalidResponse';
 
 /**
  * A failed Jam request. For an HTTP error the `{ error }` body Nuclear sends is surfaced as
@@ -41,6 +46,11 @@ export class JamError extends Error {
   ) {
     super(serverMessage ?? `Nuclear request failed (${kind}${status ? ` ${status}` : ''})`);
   }
+}
+
+/** Nuclear refused the caller (403): not on the PC's own network, or not addressed by IP. */
+export function isJamForbidden(error: unknown): boolean {
+  return error instanceof JamError && error.kind === 'forbidden';
 }
 
 /** `http://host:port` for a Jam server; IPv6 hosts are bracketed. */
@@ -106,7 +116,11 @@ export function createJamClient({
         } catch {
           message = null;
         }
-        throw new JamError('http', response.status, message);
+        throw new JamError(
+          response.status === 403 ? 'forbidden' : 'http',
+          response.status,
+          message,
+        );
       }
       return response;
     } finally {

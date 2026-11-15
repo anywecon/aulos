@@ -1,4 +1,5 @@
 import { abortError } from '@/net/errors';
+import { isIpAddress } from '@/net/guard';
 
 import { createJamClient, jamBaseUrl } from './client';
 
@@ -112,8 +113,9 @@ export async function discoverPcs(options: DiscoveryOptions): Promise<FoundPc[]>
 }
 
 /**
- * "host", "host:port", "[ipv6]:port" or a bare IPv6 address from the manual entry field; the
- * port defaults to 4120. Null for anything else.
+ * "ip", "ip:port", "[ipv6]:port" or a bare IPv6 address from the manual entry field; the port
+ * defaults to 4120. Null for anything else, host names included: Nuclear (1.55+) refuses a
+ * request whose Host header is not an IP address or localhost.
  */
 export function parseHostEntry(text: string): FoundPc | null {
   const entry = text
@@ -131,6 +133,6 @@ export function parseHostEntry(text: string): FoundPc | null {
 
 function withPort(host: string, port: string | undefined): FoundPc | null {
   const number = port === undefined ? DEFAULT_JAM_PORT : Number(port);
-  if (host === '' || !Number.isInteger(number) || number < 1 || number > 65_535) return null;
+  if (!isIpAddress(host) || !Number.isInteger(number) || number < 1 || number > 65_535) return null;
   return { host, port: number };
 }

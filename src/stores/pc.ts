@@ -2,7 +2,8 @@ import { AppState } from 'react-native';
 import { create } from 'zustand';
 
 import type { Db } from '@/db/types';
-import { createJamClient, JamError, type JamClient } from '@/nuclear/client';
+import { i18n } from '@/i18n';
+import { createJamClient, isJamForbidden, JamError, type JamClient } from '@/nuclear/client';
 import { NEXT_REPEAT, parseJamEvent, type PcConnection } from '@/nuclear/events';
 import { pickMatch, primaryArtistName, primaryCredit, type MatchResult } from '@/nuclear/match';
 import { markPairingUsed, type Pairing } from '@/nuclear/pairings';
@@ -14,6 +15,12 @@ import type {
   JamTrack,
 } from '@/nuclear/schemas';
 import { platformXhr, SseConnection, type SseHandlers, type SseState } from '@/nuclear/sse';
+
+/** Text for a failed PC request: Nuclear's refusal explained, otherwise its own message. */
+export function pcErrorText(error: unknown): string {
+  if (isJamForbidden(error)) return i18n.t('pc.forbidden');
+  return i18n.t('pc.error', { message: error instanceof Error ? error.message : String(error) });
+}
 
 /** Search results considered for "Send to PC". */
 const SEND_SEARCH_LIMIT = 10;
@@ -76,7 +83,7 @@ export interface PcState {
   playback: JamPlayback | null;
   settings: JamSettings | null;
   volume: number | null;
-  /** Message of the last failed action (Nuclear's `{ error }` when it sent one). */
+  /** Text of the last failed action (Nuclear's `{ error }` when it sent one), ready to show. */
   lastError: string | null;
   /** "Send to PC" found no sure match: the tracks to choose from. */
   candidates: { title: string; tracks: JamTrack[] } | null;
@@ -131,7 +138,7 @@ export const usePcStore = create<PcState>()((set, get) => {
       set({ lastError: null });
       return result;
     } catch (error) {
-      set({ lastError: error instanceof Error ? error.message : String(error) });
+      set({ lastError: pcErrorText(error) });
       return null;
     }
   };
@@ -184,6 +191,9 @@ export const usePcStore = create<PcState>()((set, get) => {
         onState: (state) => {
           if (rt().client === c) set({ connection: CONNECTION[state] });
         },
+        onRefused: () => {
+          if (rt().client === c) set({ lastError: pcErrorText(new JamError('forbidden', 403)) });
+        },
       });
     },
 
@@ -214,7 +224,7 @@ export const usePcStore = create<PcState>()((set, get) => {
         ]);
         if (rt().client === c) set({ queue, playback, settings, volume, lastError: null });
       } catch (error) {
-        set({ lastError: error instanceof Error ? error.message : String(error) });
+        set({ lastError: pcErrorText(error) });
       }
     },
 
