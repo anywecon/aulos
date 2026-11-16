@@ -1,6 +1,6 @@
-**Current:** M4b 1.0.0 — third signed build verified: S23 upgrade counts match (no orphans), S23 suite with the real Nuclear complete (13/14 in the run, `m3-remote-controls` passed after the flow's seek fix), emulators 13/13 runnable; waiting for Fiouri's release yes
-**Next step:** Fiouri's yes for `gh release create v1.0.0` with the APKs and SHA256SUMS.txt from dist/1.0.0/, notes from CHANGELOG and the certificate fingerprint
-**Last session:** 2026-11-16 — `m3-remote-controls` seek step waits for a playing, loaded track and polls the position (50-70 % check, 30 s minimum); API 36 mock-jam 4/4 in suite order, S23 against the real Nuclear passed; signed 1.0.0 otherwise as verified earlier the same day
+**Current:** M4b 1.0.0 — release gate met: S23 suite 14/14 in one run with the real Nuclear on the signed 1.0.0 (built from e43b2c0, no app changes since); emulators 13/13 runnable; release command prepared, waiting for Fiouri's yes
+**Next step:** Fiouri's yes for the prepared `gh release create v1.0.0` (tag on main HEAD, 4 APKs + SHA256SUMS.txt from dist/1.0.0/, notes from the 1.0.0 CHANGELOG section plus the certificate fingerprint)
+**Last session:** 2026-11-16 — S23 release-gate suite 14/14 in one run (real Nuclear 1.55); build commit e43b2c0 confirmed, no app diff to HEAD; release command and notes prepared, not run
 
 ## M4b 1.0.0 (in progress, 2026-11-13)
 
