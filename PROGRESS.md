@@ -1,8 +1,12 @@
-**Current:** M4b 1.0.0 — release gate met: S23 suite 14/14 in one run with the real Nuclear on the signed 1.0.0 (built from e43b2c0, no app changes since); emulators 13/13 runnable; release command prepared, waiting for Fiouri's yes
-**Next step:** Fiouri's yes for the prepared `gh release create v1.0.0` (tag on main HEAD, 4 APKs + SHA256SUMS.txt from dist/1.0.0/, notes from the 1.0.0 CHANGELOG section plus the certificate fingerprint)
-**Last session:** 2026-11-16 — S23 release-gate suite 14/14 in one run (real Nuclear 1.55); build commit e43b2c0 confirmed, no app diff to HEAD; release command and notes prepared, not run
+**Current:** M4 done — Aulos 1.0.0 released on GitHub (2026-11-16, tag v1.0.0 on be5e536, APKs built from e43b2c0)
+**Next step:** none for M4; post-1.0 items below (remote-flow queue precondition, v1.1: download foreground service, playlist import from the PC via GET /api/playlists)
+**Last session:** 2026-11-16 — v1.0.0 published (not draft, not prerelease, Latest; 5 assets); downloaded assets verified (SHA256SUMS OK, apksigner v2+v3, published certificate); S23 release-gate suite 14/14 before the release
 
-## M4b 1.0.0 (in progress, 2026-11-13)
+## M4b 1.0.0 (released 2026-11-16)
+
+- **Released:** https://github.com/anywecon/aulos/releases/tag/v1.0.0 — annotated tag `v1.0.0` ("Aulos 1.0.0") on be5e536, title "Aulos 1.0.0", notes from the CHANGELOG 1.0.0 section plus the certificate fingerprint; assets: the arm64-v8a, armeabi-v7a, x86_64 and universal APKs and SHA256SUMS.txt from Fiouri's `dist/1.0.0` (built from e43b2c0; no app change between e43b2c0 and the tag). Not a draft, not a prerelease, marked Latest; v1.0.0-rc.1 stays a prerelease.
+- **Verified after publishing:** `gh release download v1.0.0` into a temporary folder outside the repo: `sha256sum -c SHA256SUMS.txt` OK for all four APKs, the file identical to `dist/1.0.0/SHA256SUMS.txt`; `apksigner verify --print-certs`: v2 and v3, one signer, certificate SHA-256 e4126faa…edca1 as published. Folder deleted.
+- **Release gate:** S23 suite 14/14 in one run on the signed 1.0.0 over the rc.1-era install with the real Nuclear 1.55; API 36 and API 31 fresh installs 13/13 runnable (the two Internet Archive flows need HTTPS, blocked by the PC's TLS proxy on emulators).
 
 - **Done:** step 0 (repo references → anywecon/aulos; Expo SDK 58 patch updates + expo-asset/expo-font, expo-doctor 20/20, node-forge override kept and re-checked, the `@expo/cli` zod override removed on 2026-11-14 because `@expo/cli` 58.1.20 no longer uses zod; debug-build Maestro cause found: UiAutomator idle wait under the React Native debug runtime, not app code; README says to run the suite on a release APK), step 1 (light, not daily dogfood; no crash or bug; Fiouri accepted 1.0.0 on that basis), step 3 (1.0.0, versionCode base 10010, CHANGELOG, fastlane changelogs).
 - **Verified:** typecheck, lint, 360 tests, privacy check, expo-doctor 20/20, prebuild, Gradle lint 0 errors, osv-scanner 0 High, gitleaks clean; Maestro on API 36 and API 31 with the 1.0.0 x86_64 release APK (debug key): 13/13 runnable each (the two Internet Archive flows are blocked by the PC's TLS proxy on emulators).
