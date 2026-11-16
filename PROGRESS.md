@@ -1,6 +1,6 @@
-**Current:** M4b 1.0.0 — not released: SQLite transaction fix (foreign keys, busy timeout, orphan cleanup 006) and a scan removal guard added after the rebuilt 1.0.0 showed "database is locked"; waiting for a new signed build
-**Next step:** Fiouri re-runs `scripts\Build-Release.ps1` (versionCode base stays 10010); then Claude records playlist, item, favourite and history counts on the S23 from the app, installs the new 1.0.0 over it, checks the counts match (true orphans listed from the migration log), runs the full S23 suite and the emulator fresh installs; the release only with Fiouri's yes
-**Last session:** 2026-11-15 — signed builds verified (apksigner, S23 upgrade keeps data, S23 14/14 incl. real Nuclear 1.55, emulators 13/13 runnable); Nuclear 1.55 → IP-only pairing + 403 message; SQLite transaction bug (no foreign keys, no busy timeout in transactions) fixed with migration 006; typecheck, lint, 375 tests, privacy, prebuild, Gradle lint/release; Maestro on API 36 (see SESSIONS)
+**Current:** M4b 1.0.0 — third signed build verified (S23 upgrade counts match, no orphans; S23 13/14 with real Nuclear, emulators 13/13 runnable); waiting for the real-Nuclear remote check, then Fiouri's release yes
+**Next step:** Fiouri makes Nuclear play a track on the PC again (its streams failed with status `error` at 02:50); Claude re-runs `m3-remote-controls` on the S23 against it; with that green and Fiouri's yes, `gh release create v1.0.0`
+**Last session:** 2026-11-16 — removal guard and DB fix in the signed 1.0.0; S23 upgrade check (counts match, migration 006 found no orphans), S23 suite 13/14 (`m3-remote-controls` blocked by Nuclear failing to stream; passes against mock-jam on the S23), API 36 and API 31 fresh installs 13/13 runnable
 
 ## M4b 1.0.0 (in progress, 2026-11-13)
 
