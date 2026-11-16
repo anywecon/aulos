@@ -1,6 +1,6 @@
-**Current:** M4b 1.0.0 — third signed build verified (S23 upgrade counts match, no orphans; S23 13/14 with real Nuclear, emulators 13/13 runnable); waiting for the real-Nuclear remote check, then Fiouri's release yes
-**Next step:** Fiouri makes Nuclear play a track on the PC again (its streams failed with status `error` at 02:50); Claude re-runs `m3-remote-controls` on the S23 against it; with that green and Fiouri's yes, `gh release create v1.0.0`
-**Last session:** 2026-11-16 — removal guard and DB fix in the signed 1.0.0; S23 upgrade check (counts match, migration 006 found no orphans), S23 suite 13/14 (`m3-remote-controls` blocked by Nuclear failing to stream; passes against mock-jam on the S23), API 36 and API 31 fresh installs 13/13 runnable
+**Current:** M4b 1.0.0 — third signed build verified (S23 upgrade counts match, no orphans; S23 13/14, emulators 13/13 runnable); `m3-remote-controls` against the real Nuclear passes play/pause but needs 2+ tracks in Nuclear's queue for next/previous
+**Next step:** Fiouri puts at least two playable tracks in Nuclear's queue; Claude re-runs `m3-remote-controls` on the S23; with that green and Fiouri's yes, `gh release create v1.0.0`
+**Last session:** 2026-11-16 — removal guard and DB fix in the signed 1.0.0; S23 upgrade check (counts match; pre-upgrade counts taken after the old build had removed the 22 test tracks; migration 006: no orphans), S23 suite 13/14, emulators 13/13 runnable incl. `m3-pc-queue`; real-Nuclear remote: play/pause pass, next blocked by a one-track queue
 
 ## M4b 1.0.0 (in progress, 2026-11-13)
 
