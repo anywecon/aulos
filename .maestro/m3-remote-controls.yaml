@@ -56,20 +56,75 @@ appId: com.anywecon.aulos
                 id: 'pc-title'
 - assertTrue: ${maestro.copiedText !== output.before}
 
-# Seek to 60 %: the position passes a third of the track.
+# Seek to 60 %. A real PC needs time to load the new track: a seek sent while it is still
+# loading is dropped. Wait until it plays (Pause shown) with a known duration and a position
+# that has started to move. Next on the last track stops the PC: start it again.
+- runFlow:
+    when:
+      visible:
+        id: 'pc-play-pause'
+        text: 'Play'
+    commands:
+      - tapOn:
+          id: 'pc-play-pause'
+- extendedWaitUntil:
+    visible:
+      id: 'pc-play-pause'
+      text: 'Pause'
+    timeout: 15000
+- extendedWaitUntil:
+    notVisible:
+      id: 'pc-duration'
+      text: '0:00'
+    timeout: 20000
+- extendedWaitUntil:
+    notVisible:
+      id: 'pc-position'
+      text: '0:00'
+    timeout: 20000
 - copyTextFrom:
     id: 'pc-duration'
-- evalScript: ${output.duration = maestro.copiedText}
+# var, not const: the scripts below run again on every repeat, in the same scope.
+- evalScript: |
+    ${
+      var toSeconds = function (t) {
+        return t.split(':').reduce(function (total, part) {
+          return total * 60 + Number(part);
+        }, 0);
+      };
+      output.duration = maestro.copiedText;
+      output.durationSeconds = toSeconds(maestro.copiedText);
+    }
+# The position shows whole seconds: 50-70 % is only measurable on a track of 30 s or more.
+- assertTrue:
+    condition: ${output.durationSeconds >= 30}
+    label: The PC's current track must be at least 30 s long for the seek check
+- evalScript: ${output.seekOk = false}
 - tapOn:
     id: 'pc-seek'
     point: '60%,50%'
-- copyTextFrom:
-    id: 'pc-position'
-- evalScript: |
-    ${
-      const seconds = (t) => t.split(':').reduce((total, part) => total * 60 + Number(part), 0);
-      output.seekOk = seconds(maestro.copiedText) * 3 >= seconds(output.duration);
-    }
+# The position arrives with the PC's next playback event: poll it for about 5 s. It must land
+# near 60 % of the track (50-70 %: tap precision on the slider plus a few seconds of playback).
+- repeat:
+    times: 12
+    while:
+      true: ${!output.seekOk}
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 400
+      - copyTextFrom:
+          id: 'pc-position'
+      - evalScript: |
+          ${
+            var toSeconds = function (t) {
+              return t.split(':').reduce(function (total, part) {
+                return total * 60 + Number(part);
+              }, 0);
+            };
+            var share = toSeconds(maestro.copiedText) / output.durationSeconds;
+            console.log('seek check: ' + maestro.copiedText + ' of ' + output.duration);
+            output.seekOk = share >= 0.5 && share <= 0.7;
+          }
 - assertTrue: ${output.seekOk}
 
 # Volume: set it near 80 %, then back to the middle (mock-jam starts at 50 %; on a real PC
